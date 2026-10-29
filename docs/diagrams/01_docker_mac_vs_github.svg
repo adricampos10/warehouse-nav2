@@ -1,10 +1,10 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="1360" height="800" viewBox="0 0 680 400" role="img" font-family="-apple-system, 'Helvetica Neue', Arial, sans-serif">
-<title>Docker on your Mac and on GitHub</title>
+<title>Docker on my Mac and on GitHub</title>
 <desc>On the Mac, Docker Desktop creates a Linux VM and the ROS 2 container runs inside it. On GitHub, the runner is already an Ubuntu VM and the same container runs inside it.</desc>
 <rect width="680" height="400" fill="#FFFFFF"/>
 <g>
 <rect x="40" y="30" width="280" height="320" rx="20" fill="#F1EFE8" stroke="#5F5E5A" stroke-width="0.5"/>
-<text x="180" y="56" text-anchor="middle" dominant-baseline="central" font-size="14" font-weight="500" fill="#444441">Your Mac (macOS)</text>
+<text x="180" y="56" text-anchor="middle" dominant-baseline="central" font-size="14" font-weight="500" fill="#444441">Computer (macOS)</text>
 <text x="180" y="76" text-anchor="middle" dominant-baseline="central" font-size="12" fill="#5F5E5A">Local machine</text>
 </g>
 <g>
