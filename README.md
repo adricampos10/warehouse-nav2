@@ -10,6 +10,10 @@ I'm building an autonomous warehouse robot with **ROS 2 Jazzy + Nav2**, simulate
 - Scenario suite (moving obstacles, narrow aisles, people crossing) run headless in Docker, reporting success rate, time to goal and minimum obstacle distance.
 - CI with GitHub Actions running the scenarios on every change.
 
+## Docs
+- [Command cheatsheet](docs/cheatsheet.md) — the Docker, ROS 2 and Git commands I use, explained.
+- [Diagrams](docs/diagrams/README.md) — how the project is put together.
+
 ## Run the environment
 ```bash
 docker build -t warehouse-nav2:jazzy docker/
