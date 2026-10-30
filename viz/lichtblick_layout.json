@@ -1,0 +1,47 @@
+{
+  "configById": {
+    "3D!nav2": {
+      "cameraState": {
+        "distance": 9,
+        "perspective": true,
+        "phi": 35,
+        "thetaOffset": 90,
+        "targetOffset": [0, 0, 0],
+        "target": [0, 0, 0],
+        "targetOrientation": [0, 0, 0, 1],
+        "fovy": 45,
+        "near": 0.01,
+        "far": 5000
+      },
+      "followMode": "follow-none",
+      "followTf": "map",
+      "scene": {
+        "transforms": { "showLabel": false, "axisScale": 0.4 }
+      },
+      "transforms": {},
+      "topics": {
+        "/map": { "visible": true },
+        "/global_costmap/costmap": { "visible": true, "colorMode": "costmap", "alpha": 0.5 },
+        "/scan": { "visible": true, "pointSize": 5, "colorMode": "flat", "flatColor": "#ff3b30ff" },
+        "/plan": { "visible": true, "lineWidth": 0.04, "gradient": ["#34c759ff", "#34c759ff"] },
+        "/local_costmap/published_footprint": { "visible": true },
+        "/robot_description": { "visible": true },
+        "/goal_pose": { "visible": true }
+      },
+      "layers": {},
+      "publish": {
+        "type": "pose",
+        "poseTopic": "/goal_pose",
+        "pointTopic": "/clicked_point",
+        "poseEstimateTopic": "/initialpose",
+        "poseEstimateXDeviation": 0.5,
+        "poseEstimateYDeviation": 0.5,
+        "poseEstimateThetaDeviation": 0.26179939
+      }
+    }
+  },
+  "globalVariables": {},
+  "userNodes": {},
+  "playbackConfig": { "speed": 1 },
+  "layout": "3D!nav2"
+}

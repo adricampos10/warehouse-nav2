@@ -27,3 +27,11 @@ docker run --rm -it warehouse-nav2:jazzy bash
 scripts/run_smoke_test.sh
 ```
 It starts the headless Nav2 simulation in a container, drives the TurtleBot3 to a goal and exits with 0 if it gets there. GitHub Actions runs the same script on every push ([workflow](.github/workflows/ci.yml)).
+
+## Watch the robot
+Docker on my Mac cannot open Gazebo's window, so I watch the simulation in [Lichtblick](https://github.com/lichtblick-suite/lichtblick) (the open-source Foxglove) through `foxglove_bridge`:
+```bash
+scripts/run_sim_viz.sh   # terminal 1: simulation + foxglove_bridge on ws://localhost:8765
+scripts/run_viewer.sh    # terminal 2: Lichtblick on http://localhost:8080
+```
+Then open <http://localhost:8080/?ds=foxglove-websocket&ds.url=ws://localhost:8765>. The layout in [`viz/lichtblick_layout.json`](viz/lichtblick_layout.json) shows the map, global costmap, laser scan, planned path and robot model. `run_sim_viz.sh` sets the initial pose automatically, so goals can be sent straight away with the 3D panel's *Publish pose* tool (it publishes on `/goal_pose`).
