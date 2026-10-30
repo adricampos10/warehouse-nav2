@@ -1,0 +1,22 @@
+# CI: on every push and pull request, build the Docker image and run the
+# Nav2 smoke test in a headless Gazebo simulation.
+name: CI
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  smoke-test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Check out the code
+        uses: actions/checkout@v4
+
+      - name: Build the Docker image
+        run: docker build -t warehouse-nav2:jazzy docker/
+
+      - name: Run the Nav2 smoke test
+        run: scripts/run_smoke_test.sh
