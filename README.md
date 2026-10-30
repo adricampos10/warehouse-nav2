@@ -1,5 +1,7 @@
 # warehouse-nav2
 
+[![CI](https://github.com/adricampos10/warehouse-nav2/actions/workflows/ci.yml/badge.svg)](https://github.com/adricampos10/warehouse-nav2/actions/workflows/ci.yml)
+
 I'm building an autonomous warehouse robot with **ROS 2 Jazzy + Nav2**, simulated in **Gazebo Harmonic** (and later NVIDIA Isaac Sim), with a **behavior-tree mission** and an **automated scenario test suite** that runs headless in Docker and on GitHub Actions.
 
 > Work in progress.
@@ -19,3 +21,9 @@ I'm building an autonomous warehouse robot with **ROS 2 Jazzy + Nav2**, simulate
 docker build -t warehouse-nav2:jazzy docker/
 docker run --rm -it warehouse-nav2:jazzy bash
 ```
+
+## Run the smoke test
+```bash
+scripts/run_smoke_test.sh
+```
+It starts the headless Nav2 simulation in a container, drives the TurtleBot3 to a goal and exits with 0 if it gets there. GitHub Actions runs the same script on every push ([workflow](.github/workflows/ci.yml)).
