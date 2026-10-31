@@ -21,7 +21,7 @@ jobs:
           python-version: "3.12"
 
       - name: Install test dependencies
-        run: pip install pytest pyyaml
+        run: pip install -r requirements-dev.txt
 
       - name: Run the unit tests
         run: pytest -v

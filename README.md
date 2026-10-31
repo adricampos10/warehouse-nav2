@@ -52,6 +52,14 @@ The pass/fail logic and the metrics live in [`metrics.py`](scripts/metrics.py), 
 docker run --rm -v "$PWD":/ws -w /ws warehouse-nav2:jazzy pytest -v
 ```
 
+### In VS Code
+`metrics.py` has no ROS dependencies, so I also run and debug its tests on my Mac, in a virtual environment:
+```bash
+python3 -m venv .venv
+.venv/bin/pip install -r requirements-dev.txt
+```
+The settings in [`.vscode/`](.vscode) point VS Code at `.venv` and pytest, so the tests show up in the Testing panel, where I can run or debug each one with breakpoints.
+
 ### On GitHub Actions
 On every push, the [workflow](.github/workflows/ci.yml) runs the unit tests first, then one parallel job per scenario file (a build matrix, so adding a YAML file adds a job), and finally writes the results table to the run's summary page.
 
