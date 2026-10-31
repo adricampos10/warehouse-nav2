@@ -1,0 +1,6 @@
+# Short drive between the pillars, the same goal as the smoke test.
+description: Short drive between the pillars
+start: [-2.0, -0.5]
+goals:
+  - [0.5, -0.5]
+timeout: 90

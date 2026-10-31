@@ -1,5 +1,6 @@
-# CI: on every push and pull request, build the Docker image and run the
-# Nav2 smoke test in a headless Gazebo simulation.
+# CI: on every push and pull request, run the unit tests, then every
+# navigation scenario in its own headless Gazebo simulation (one parallel job
+# per file in scenarios/), and publish a summary table of the results.
 name: CI
 
 on:
@@ -8,15 +9,76 @@ on:
   workflow_dispatch:
 
 jobs:
-  smoke-test:
+  unit-tests:
     runs-on: ubuntu-24.04
-    timeout-minutes: 30
     steps:
       - name: Check out the code
-        uses: actions/checkout@v5
+        uses: actions/checkout@v7
+
+      - name: Set up Python
+        uses: actions/setup-python@v7
+        with:
+          python-version: "3.12"
+
+      - name: Install test dependencies
+        run: pip install pytest pyyaml
+
+      - name: Run the unit tests
+        run: pytest -v
+
+  list-scenarios:
+    runs-on: ubuntu-24.04
+    outputs:
+      names: ${{ steps.list.outputs.names }}
+    steps:
+      - name: Check out the code
+        uses: actions/checkout@v7
+
+      - name: List the scenario files
+        id: list
+        run: echo "names=$(ls scenarios/*.yaml | xargs -n1 basename | sed 's/\.yaml$//' | jq -R . | jq -cs .)" >> "$GITHUB_OUTPUT"
+
+  scenario:
+    name: scenario (${{ matrix.scenario }})
+    needs: [unit-tests, list-scenarios]
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        scenario: ${{ fromJSON(needs.list-scenarios.outputs.names) }}
+    steps:
+      - name: Check out the code
+        uses: actions/checkout@v7
 
       - name: Build the Docker image
         run: docker build -t warehouse-nav2:jazzy docker/
 
-      - name: Run the Nav2 smoke test
-        run: scripts/run_smoke_test.sh
+      - name: Run the scenario
+        run: scripts/run_scenarios.sh ${{ matrix.scenario }}
+
+      - name: Upload the result
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: result-${{ matrix.scenario }}
+          path: results/${{ matrix.scenario }}.json
+          if-no-files-found: warn
+
+  report:
+    needs: scenario
+    if: always()
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Check out the code
+        uses: actions/checkout@v7
+
+      - name: Download the results
+        uses: actions/download-artifact@v8
+        with:
+          pattern: result-*
+          merge-multiple: true
+          path: results
+
+      - name: Write the summary table
+        run: python3 scripts/report.py results/*.json >> "$GITHUB_STEP_SUMMARY"

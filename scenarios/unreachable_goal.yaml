@@ -1,0 +1,7 @@
+# A goal far outside the map: Nav2 must give up instead of driving forever.
+description: Goal outside the map must fail cleanly
+start: [-2.0, -0.5]
+goals:
+  - [10.0, 10.0]
+timeout: 180
+expect: failure

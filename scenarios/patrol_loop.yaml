@@ -1,0 +1,9 @@
+# Several goals in a row, back to the start: the loop from patrol.py.
+description: Patrol loop through four waypoints
+start: [-2.0, -0.5]
+goals:
+  - [-1.5, 1.6]
+  - [1.8, 0.3]
+  - [0.5, -0.5]
+  - [-2.0, -0.5]
+timeout: 300

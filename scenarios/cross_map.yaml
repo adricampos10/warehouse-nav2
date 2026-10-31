@@ -1,0 +1,6 @@
+# Long drive to the far side of the map, threading between pillars.
+description: Long drive to the far side of the map
+start: [-2.0, -0.5]
+goals:
+  - [1.8, 0.3]
+timeout: 150

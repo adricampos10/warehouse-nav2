@@ -22,11 +22,44 @@ docker build -t warehouse-nav2:jazzy docker/
 docker run --rm -it warehouse-nav2:jazzy bash
 ```
 
+## Run the scenario suite
+Each file in [`scenarios/`](scenarios) describes a navigation test: start pose, one or more goals, a time limit, and whether Nav2 should succeed or fail:
+```yaml
+description: Patrol loop through four waypoints
+start: [-2.0, -0.5]
+goals:
+  - [-1.5, 1.6]
+  - [1.8, 0.3]
+  - [0.5, -0.5]
+  - [-2.0, -0.5]
+timeout: 300
+```
+```bash
+scripts/run_scenarios.sh              # every scenario
+scripts/run_scenarios.sh short_goal   # just one
+```
+Every scenario gets a fresh headless simulation in its own container. [`run_scenario.py`](scripts/run_scenario.py) drives the robot through the goals while recording `/odom` and `/scan`, then saves `results/<scenario>.json`. A scenario passes if the robot reaches every goal in time without getting closer than 0.15 m to an obstacle (or, for `expect: failure`, if Nav2 gives up). The script ends with a summary table; this is a run on my Mac:
+
+| Scenario | Result | Goals | Time (s) | Path (m) | Min clearance (m) | Notes |
+|---|---|---|---|---|---|---|
+| cross_map | PASS | 1/1 | 25.6 | 4.61 | 0.36 | all goals reached |
+| patrol_loop | PASS | 4/4 | 50.7 | 11.52 | 0.32 | all goals reached |
+| short_goal | PASS | 1/1 | 6.1 | 2.31 | 0.36 | all goals reached |
+| unreachable_goal | PASS | 0/1 | 0.0 | 0.00 | 0.48 | failed as expected |
+
+The pass/fail logic and the metrics live in [`metrics.py`](scripts/metrics.py), with no ROS imports, so they are unit-tested with pytest in milliseconds:
+```bash
+docker run --rm -v "$PWD":/ws -w /ws warehouse-nav2:jazzy pytest -v
+```
+
+### On GitHub Actions
+On every push, the [workflow](.github/workflows/ci.yml) runs the unit tests first, then one parallel job per scenario file (a build matrix, so adding a YAML file adds a job), and finally writes the results table to the run's summary page.
+
 ## Run the smoke test
 ```bash
 scripts/run_smoke_test.sh
 ```
-It starts the headless Nav2 simulation in a container, drives the TurtleBot3 to a goal and exits with 0 if it gets there. GitHub Actions runs the same script on every push ([workflow](.github/workflows/ci.yml)).
+A quicker single check: it starts the headless Nav2 simulation in a container, drives the TurtleBot3 to a goal and exits with 0 if it gets there.
 
 ## Watch the robot
 Docker on my Mac cannot open Gazebo's window, so I watch the simulation in [Lichtblick](https://github.com/lichtblick-suite/lichtblick) (the open-source Foxglove) through `foxglove_bridge`:
