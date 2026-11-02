@@ -26,6 +26,7 @@ def run(goals_reached=2, timed_out=False, min_range=0.5):
 def test_defaults_are_filled_in():
     s = scenario()
     assert s["expect"] == "success"
+    assert s["world"] == "tb3_sandbox"
     assert s["min_clearance"] == pytest.approx(0.15)
     assert s["goals"] == [(1.0, 0.0), (2.0, 0.0)]
 
@@ -36,6 +37,7 @@ def test_defaults_are_filled_in():
     ({"start": [0, 0], "goals": [[1, 0, 0]], "timeout": 60}, r"\[x, y\]"),
     ({"start": [0, 0], "goals": [[1, 0]], "timeout": -5}, "positive"),
     ({"start": [0, 0], "goals": [[1, 0]], "timeout": 60, "expect": "maybe"}, "expect"),
+    ({"start": [0, 0], "goals": [[1, 0]], "timeout": 60, "world": "moon"}, "world"),
 ])
 def test_invalid_scenarios_are_rejected(bad, message):
     with pytest.raises(ValueError, match=message):

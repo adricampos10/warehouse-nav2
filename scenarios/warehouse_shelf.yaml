@@ -1,0 +1,7 @@
+# From the loading area to a picking spot between shelves A and B.
+description: Drive from the loading area to a shelf
+world: warehouse
+start: [-5.5, 0.0]
+goals:
+  - [1.0, 2.4]
+timeout: 120

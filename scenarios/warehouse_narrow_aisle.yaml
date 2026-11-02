@@ -1,0 +1,12 @@
+# Through the narrow aisle between shelves C and D: 1.0 m wide, with the
+# robot's 0.22 m radius and Nav2's 0.7 m obstacle inflation. Left to itself
+# the planner prefers the open area below shelf D, so a goal in the middle
+# of the aisle forces the robot through it.
+description: Drive through the 1.0 m narrow aisle
+world: warehouse
+start: [-5.5, 0.0]
+goals:
+  - [-3.0, -1.1]
+  - [1.0, -1.1]
+  - [5.5, -1.1]
+timeout: 180

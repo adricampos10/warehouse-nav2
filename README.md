@@ -22,17 +22,28 @@ docker build -t warehouse-nav2:jazzy docker/
 docker run --rm -it warehouse-nav2:jazzy bash
 ```
 
+## My warehouse
+![My warehouse in Lichtblick: four rows of shelves with the costmap inflation around them, and the robot in the narrow aisle](docs/images/warehouse_lichtblick.png)
+
+A 14 × 10 m building with a loading area and four rows of shelves (6 × 0.6 m). The aisles between them are 1.2 m wide, except for one narrow aisle of 1.0 m: with the robot's 0.22 m radius and Nav2's 0.7 m obstacle inflation, that one is hard on purpose.
+
+[`make_warehouse.py`](scripts/make_warehouse.py) holds the layout as a list of boxes and generates both the Gazebo world ([`worlds/warehouse.sdf.xacro`](worlds/warehouse.sdf.xacro)) and the Nav2 map ([`maps/warehouse.pgm`](maps/warehouse.pgm) + `.yaml`) from it, so the simulation and the map can never disagree. A unit test fails if the files in the repo are out of date:
+```bash
+python3 scripts/make_warehouse.py
+```
+I don't change Nav2 for this: `tb3_simulation_launch.py` already takes the world, the map and the spawn position as arguments, and [`worlds.py`](scripts/worlds.py) builds them for each world.
+
 ## Run the scenario suite
-Each file in [`scenarios/`](scenarios) describes a navigation test: start pose, one or more goals, a time limit, and whether Nav2 should succeed or fail:
+Each file in [`scenarios/`](scenarios) describes a navigation test: the world (Nav2's TurtleBot3 sandbox by default, or my warehouse), start pose, one or more goals, a time limit, and whether Nav2 should succeed or fail:
 ```yaml
-description: Patrol loop through four waypoints
-start: [-2.0, -0.5]
+description: Drive through the 1.0 m narrow aisle
+world: warehouse
+start: [-5.5, 0.0]
 goals:
-  - [-1.5, 1.6]
-  - [1.8, 0.3]
-  - [0.5, -0.5]
-  - [-2.0, -0.5]
-timeout: 300
+  - [-3.0, -1.1]
+  - [1.0, -1.1]
+  - [5.5, -1.1]
+timeout: 180
 ```
 ```bash
 scripts/run_scenarios.sh              # every scenario
@@ -46,8 +57,13 @@ Every scenario gets a fresh headless simulation in its own container. [`run_scen
 | patrol_loop | PASS | 4/4 | 50.7 | 11.52 | 0.32 | all goals reached |
 | short_goal | PASS | 1/1 | 6.1 | 2.31 | 0.36 | all goals reached |
 | unreachable_goal | PASS | 0/1 | 0.0 | 0.00 | 0.48 | failed as expected |
+| warehouse_narrow_aisle | PASS | 3/3 | 27.9 | 11.30 | 0.41 | all goals reached |
+| warehouse_patrol | PASS | 3/3 | 99.3 | 39.76 | 0.71 | all goals reached |
+| warehouse_shelf | PASS | 1/1 | 18.2 | 7.11 | 0.49 | all goals reached |
 
-The pass/fail logic and the metrics live in [`metrics.py`](scripts/metrics.py), with no ROS imports, so they are unit-tested with pytest in milliseconds:
+The narrow aisle taught me something: my first version only had goals at both ends, and the robot passed with a minimum clearance of 0.80 m, which is impossible inside a 1.0 m aisle. The planner had gone around the shelves, because the inflated costmap makes the narrow aisle expensive. A goal in the middle of the aisle forces it through, and now the clearance (0.41 m) proves it.
+
+The pass/fail logic and the metrics live in [`metrics.py`](scripts/metrics.py), with no ROS imports, so they are unit-tested with pytest in milliseconds, together with the warehouse generator and a check that every warehouse scenario starts and ends in free space on the map:
 ```bash
 docker run --rm -v "$PWD":/ws -w /ws warehouse-nav2:jazzy pytest -v
 ```
@@ -72,10 +88,15 @@ A quicker single check: it starts the headless Nav2 simulation in a container, d
 ## Watch the robot
 Docker on my Mac cannot open Gazebo's window, so I watch the simulation in [Lichtblick](https://github.com/lichtblick-suite/lichtblick) (the open-source Foxglove) through `foxglove_bridge`:
 ```bash
-scripts/run_sim_viz.sh   # terminal 1: simulation + foxglove_bridge on ws://localhost:8765
+scripts/run_sim_viz.sh warehouse   # terminal 1: simulation + foxglove_bridge on ws://localhost:8765
+                                   # (without an argument: Nav2's TurtleBot3 sandbox)
 scripts/run_viewer.sh    # terminal 2: Lichtblick on http://localhost:8080
 ```
 Then open <http://localhost:8080/?ds=foxglove-websocket&ds.url=ws://localhost:8765>. The layout in [`viz/lichtblick_layout.json`](viz/lichtblick_layout.json) shows the map, global costmap, laser scan, planned path and robot model. `run_sim_viz.sh` sets the initial pose automatically, so goals can be sent straight away with the 3D panel's *Publish pose* tool (it publishes on `/goal_pose`). To watch it drive around on its own:
 ```bash
 docker exec nav2viz bash -c "source /opt/ros/jazzy/setup.bash && python3 /ws/scripts/patrol.py 5"
+```
+`patrol.py` uses waypoints from the TurtleBot3 sandbox. In the warehouse I run one of its scenarios in the same container instead:
+```bash
+docker exec nav2viz bash -c "source /opt/ros/jazzy/setup.bash && cd /ws/scripts && python3 run_scenario.py /ws/scenarios/warehouse_patrol.yaml /tmp/results"
 ```
