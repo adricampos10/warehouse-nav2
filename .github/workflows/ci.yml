@@ -65,8 +65,11 @@ jobs:
           path: results/${{ matrix.scenario }}.json
           if-no-files-found: warn
 
+  # Also the single gate for branch protection: it always runs, writes the
+  # table and fails if the unit tests or any scenario failed, so main only
+  # needs to require this one check, however many scenarios there are.
   report:
-    needs: scenario
+    needs: [unit-tests, scenario]
     if: always()
     runs-on: ubuntu-24.04
     steps:
@@ -82,3 +85,9 @@ jobs:
 
       - name: Write the summary table
         run: python3 scripts/report.py results/*.json >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Fail if the unit tests or any scenario failed
+        if: needs.unit-tests.result != 'success' || needs.scenario.result != 'success'
+        run: |
+          echo "unit-tests: ${{ needs.unit-tests.result }}, scenarios: ${{ needs.scenario.result }}"
+          exit 1

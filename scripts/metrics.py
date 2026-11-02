@@ -6,6 +6,8 @@ pass/fail results and a summary table.
 """
 import math
 
+from worlds import DEFAULT_WORLD, WORLDS
+
 DEFAULT_MIN_CLEARANCE = 0.15  # metres from the laser to the nearest obstacle
 EXPECTATIONS = ("success", "failure")
 
@@ -32,9 +34,13 @@ def validate_scenario(data):
     expect = data.get("expect", "success")
     if expect not in EXPECTATIONS:
         raise ValueError(f"expect must be one of {EXPECTATIONS}, got {expect!r}")
+    world = data.get("world", DEFAULT_WORLD)
+    if world not in WORLDS:
+        raise ValueError(f"world must be one of {tuple(WORLDS)}, got {world!r}")
 
     return {
         "description": data.get("description", ""),
+        "world": world,
         "start": point(data["start"], "start"),
         "goals": [point(g, "goal") for g in goals],
         "timeout": float(data["timeout"]),
