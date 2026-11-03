@@ -18,7 +18,7 @@
 <rect x="30" y="150" width="230" height="170" rx="10" fill="#FAEEDA" stroke="#854F0B" stroke-width="0.8"/>
 <text x="145" y="174" text-anchor="middle" font-size="15" font-weight="600" fill="#633806">My scripts</text>
 <text x="145" y="198" text-anchor="middle" font-size="12" fill="#854F0B">run_scenario.py</text>
-<text x="145" y="216" text-anchor="middle" font-size="12" fill="#854F0B">smoke_test.py · patrol.py</text>
+<text x="145" y="216" text-anchor="middle" font-size="12" fill="#854F0B">set_initial_pose.py</text>
 <text x="145" y="242" text-anchor="middle" font-size="12" fill="#854F0B">BasicNavigator</text>
 <text x="145" y="260" text-anchor="middle" font-size="12" fill="#854F0B">(nav2_simple_commander)</text>
 <text x="145" y="284" text-anchor="middle" font-size="12" fill="#854F0B">goToPose() → navigate_to_pose</text>

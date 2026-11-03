@@ -1,4 +1,4 @@
-# Short drive between the pillars, the same goal as the smoke test.
+# Short drive between the pillars: the quickest check that everything works.
 description: Short drive between the pillars
 start: [-2.0, -0.5]
 goals:
