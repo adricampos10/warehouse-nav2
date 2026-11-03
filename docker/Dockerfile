@@ -8,3 +8,6 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
       python3-pytest \
     && rm -rf /var/lib/apt/lists/*
 RUN echo "source /opt/ros/jazzy/setup.bash" >> /root/.bashrc
+# Each container runs its own simulation: only discover ROS nodes inside it,
+# so two simulations on the same machine never see each other's topics.
+ENV ROS_AUTOMATIC_DISCOVERY_RANGE=LOCALHOST

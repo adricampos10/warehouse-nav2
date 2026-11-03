@@ -21,10 +21,7 @@ trap cleanup EXIT
 
 echo "Starting the Nav2 simulation ($WORLD) + foxglove_bridge..."
 docker run -d --rm --name "$NAME" -p "${PORT}:8765" -v "$PWD":/ws "$IMAGE" \
-  bash -c "source /opt/ros/jazzy/setup.bash \
-    && ros2 launch foxglove_bridge foxglove_bridge_launch.xml port:=8765 use_sim_time:=true > /tmp/foxglove_bridge.log 2>&1 & \
-    source /opt/ros/jazzy/setup.bash \
-    && ros2 launch nav2_bringup tb3_simulation_launch.py headless:=True use_rviz:=False \$(cd /ws/scripts && python3 worlds.py $WORLD)"
+  bash -c "source /opt/ros/jazzy/setup.bash && ros2 launch /ws/launch/sim.launch.py world_name:=$WORLD viz:=true"
 
 echo "Setting the initial pose and waiting for Nav2..."
 docker exec "$NAME" bash -c "source /opt/ros/jazzy/setup.bash && python3 /ws/scripts/set_initial_pose.py $WORLD"

@@ -29,10 +29,9 @@ failed=0
 for scenario in "${scenarios[@]}"; do
   rm -f "results/$scenario.json"
   echo "=== $scenario: starting the Nav2 simulation (headless)..."
-  # worlds.py turns the scenario's world and start into launch arguments
-  # (world file, map, spawn position).
+  # sim.launch.py reads the scenario's world and start from the file.
   docker run -d --rm --name "$NAME" -v "$PWD":/ws "$IMAGE" \
-    bash -c "source /opt/ros/jazzy/setup.bash && ros2 launch nav2_bringup tb3_simulation_launch.py headless:=True use_rviz:=False \$(cd /ws/scripts && python3 worlds.py /ws/scenarios/$scenario.yaml)" \
+    bash -c "source /opt/ros/jazzy/setup.bash && ros2 launch /ws/launch/sim.launch.py scenario:=/ws/scenarios/$scenario.yaml" \
     >/dev/null
 
   if ! docker exec "$NAME" bash -c "source /opt/ros/jazzy/setup.bash && cd /ws/scripts && timeout 600 python3 run_scenario.py /ws/scenarios/$scenario.yaml /ws/results"; then

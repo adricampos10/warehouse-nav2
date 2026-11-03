@@ -31,7 +31,11 @@ A 14 × 10 m building with a loading area and four rows of shelves (6 × 0.6 m).
 ```bash
 python3 scripts/make_warehouse.py
 ```
-I don't change Nav2 for this: `tb3_simulation_launch.py` already takes the world, the map and the spawn position as arguments, and [`worlds.py`](scripts/worlds.py) builds them for each world.
+I don't change Nav2 for this: `tb3_simulation_launch.py` already takes the world, the map and the spawn position as arguments. My launch file, [`launch/sim.launch.py`](launch/sim.launch.py), fills them in from a world name or a scenario file (using [`worlds.py`](scripts/worlds.py)) and, with `viz:=true`, also starts `foxglove_bridge`. Every script starts the simulation through it:
+```bash
+ros2 launch /ws/launch/sim.launch.py world_name:=warehouse viz:=true                 # to watch it
+ros2 launch /ws/launch/sim.launch.py scenario:=/ws/scenarios/warehouse_shelf.yaml   # to test it
+```
 
 ## Run the scenario suite
 Each file in [`scenarios/`](scenarios) describes a navigation test: the world (Nav2's TurtleBot3 sandbox by default, or my warehouse), start pose, one or more goals, a time limit, and whether Nav2 should succeed or fail:
@@ -49,7 +53,7 @@ timeout: 180
 scripts/run_scenarios.sh              # every scenario
 scripts/run_scenarios.sh short_goal   # just one
 ```
-Every scenario gets a fresh headless simulation in its own container. [`run_scenario.py`](scripts/run_scenario.py) drives the robot through the goals while recording `/odom` and `/scan`, then saves `results/<scenario>.json`. A scenario passes if the robot reaches every goal in time without getting closer than 0.15 m to an obstacle (or, for `expect: failure`, if Nav2 gives up). The script ends with a summary table; this is a run on my Mac:
+Every scenario gets a fresh headless simulation in its own container. The image sets `ROS_AUTOMATIC_DISCOVERY_RANGE=LOCALHOST`, so ROS only discovers nodes inside each container, and a scenario can run while I watch another simulation in Lichtblick (before that, the two robots' topics got mixed up). [`run_scenario.py`](scripts/run_scenario.py) drives the robot through the goals while recording `/odom` and `/scan`, then saves `results/<scenario>.json`. A scenario passes if the robot reaches every goal in time without getting closer than 0.15 m to an obstacle (or, for `expect: failure`, if Nav2 gives up). The script ends with a summary table; this is a run on my Mac:
 
 | Scenario | Result | Goals | Time (s) | Path (m) | Min clearance (m) | Notes |
 |---|---|---|---|---|---|---|
