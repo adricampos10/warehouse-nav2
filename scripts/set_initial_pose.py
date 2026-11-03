@@ -12,7 +12,7 @@ import sys
 import rclpy
 from nav2_simple_commander.robot_navigator import BasicNavigator
 
-from smoke_test import make_pose
+from nav_utils import make_pose
 from worlds import DEFAULT_WORLD, default_start
 
 

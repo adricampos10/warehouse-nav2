@@ -21,7 +21,7 @@ from rclpy.qos import qos_profile_sensor_data
 from sensor_msgs.msg import LaserScan
 
 from metrics import evaluate, min_valid_range, path_length, validate_scenario
-from smoke_test import make_pose
+from nav_utils import make_pose
 
 
 class Recorder:

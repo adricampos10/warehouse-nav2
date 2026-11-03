@@ -1,4 +1,4 @@
-# Several goals in a row, back to the start: the loop from patrol.py.
+# Several goals in a row between the pillars, back to the start.
 description: Patrol loop through four waypoints
 start: [-2.0, -0.5]
 goals:

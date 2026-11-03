@@ -77,13 +77,13 @@ python3 -m venv .venv
 The settings in [`.vscode/`](.vscode) point VS Code at `.venv` and pytest, so the tests show up in the Testing panel, where I can run or debug each one with breakpoints.
 
 ### On GitHub Actions
-On every push, the [workflow](.github/workflows/ci.yml) runs the unit tests first, then one parallel job per scenario file (a build matrix, so adding a YAML file adds a job), and finally writes the results table to the run's summary page.
+On every pull request and every push to `main`, the [workflow](.github/workflows/ci.yml) runs the unit tests first, then one parallel job per scenario file (a build matrix, so adding a YAML file adds a job), and finally writes the results table to the run's summary page.
 
-## Run the smoke test
+## Quick check
+To check that everything starts and the robot can drive, I run the shortest scenario on its own (about a minute):
 ```bash
-scripts/run_smoke_test.sh
+scripts/run_scenarios.sh short_goal
 ```
-A quicker single check: it starts the headless Nav2 simulation in a container, drives the TurtleBot3 to a goal and exits with 0 if it gets there.
 
 ## Watch the robot
 Docker on my Mac cannot open Gazebo's window, so I watch the simulation in [Lichtblick](https://github.com/lichtblick-suite/lichtblick) (the open-source Foxglove) through `foxglove_bridge`:
@@ -92,11 +92,7 @@ scripts/run_sim_viz.sh warehouse   # terminal 1: simulation + foxglove_bridge on
                                    # (without an argument: Nav2's TurtleBot3 sandbox)
 scripts/run_viewer.sh    # terminal 2: Lichtblick on http://localhost:8080
 ```
-Then open <http://localhost:8080/?ds=foxglove-websocket&ds.url=ws://localhost:8765>. The layout in [`viz/lichtblick_layout.json`](viz/lichtblick_layout.json) shows the map, global costmap, laser scan, planned path and robot model. `run_sim_viz.sh` sets the initial pose automatically, so goals can be sent straight away with the 3D panel's *Publish pose* tool (it publishes on `/goal_pose`). To watch it drive around on its own:
-```bash
-docker exec nav2viz bash -c "source /opt/ros/jazzy/setup.bash && python3 /ws/scripts/patrol.py 5"
-```
-`patrol.py` uses waypoints from the TurtleBot3 sandbox. In the warehouse I run one of its scenarios in the same container instead:
+Then open <http://localhost:8080/?ds=foxglove-websocket&ds.url=ws://localhost:8765>. The layout in [`viz/lichtblick_layout.json`](viz/lichtblick_layout.json) shows the map, global costmap, laser scan, planned path and robot model. `run_sim_viz.sh` sets the initial pose automatically, so goals can be sent straight away with the 3D panel's *Publish pose* tool (it publishes on `/goal_pose`). To watch it drive around on its own, I run a scenario of the same world in that container:
 ```bash
 docker exec nav2viz bash -c "source /opt/ros/jazzy/setup.bash && cd /ws/scripts && python3 run_scenario.py /ws/scenarios/warehouse_patrol.yaml /tmp/results"
 ```

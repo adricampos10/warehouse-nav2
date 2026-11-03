@@ -78,16 +78,16 @@ docker stop nav2test && docker ps
 
 ---
 
-## Smoke test
+## Run one scenario in a running simulation
 
 ```bash
-docker exec nav2test bash -c "source /opt/ros/jazzy/setup.bash && python3 /ws/scripts/smoke_test.py"
+docker exec nav2test bash -c "source /opt/ros/jazzy/setup.bash && cd /ws/scripts && python3 run_scenario.py /ws/scenarios/short_goal.yaml /ws/results"
 ```
-[`scripts/smoke_test.py`](../scripts/smoke_test.py) uses `nav2_simple_commander` (Nav2's Python API):
+[`scripts/run_scenario.py`](../scripts/run_scenario.py) uses `nav2_simple_commander` (Nav2's Python API):
 1. `setInitialPose(...)` publishes on `/initialpose`; AMCL starts from there and publishes the `map → odom` transform.
 2. `waitUntilNav2Active()` waits until every Nav2 *lifecycle node* is `active` (`unconfigured → inactive → active`).
-3. `goToPose(goal)` sends a goal to the `/navigate_to_pose` action.
-4. `getFeedback()` reads the action feedback (e.g. `distance_remaining`).
+3. `goToPose(goal)` sends a goal to the `/navigate_to_pose` action, once per goal in the scenario.
+4. `isTaskComplete()` spins the node while waiting, so the `/odom` and `/scan` callbacks keep recording.
 5. `getResult()` returns `SUCCEEDED`, `FAILED` or `CANCELED`.
 6. `sys.exit(0 or 1)` — the exit code is what CI uses to mark the test as passed or failed.
 
@@ -96,7 +96,7 @@ docker exec nav2test bash -c "source /opt/ros/jazzy/setup.bash && python3 /ws/sc
 ## Git basics
 
 ```bash
-git add scripts/smoke_test.py
+git add scripts/run_scenario.py
 git commit -m "Short title" -m "Optional longer description"
 git push
 git log --oneline -4

@@ -7,6 +7,6 @@
   "python.testing.unittestEnabled": false,
   "python.testing.pytestArgs": ["tests"],
 
-  // Let Cmd+click resolve imports between scripts (metrics, smoke_test)
+  // Let Cmd+click resolve imports between scripts (metrics, worlds, nav_utils)
   "python.analysis.extraPaths": ["scripts"]
 }
