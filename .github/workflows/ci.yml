@@ -1,10 +1,14 @@
-# CI: on every push and pull request, run the unit tests, then every
-# navigation scenario in its own headless Gazebo simulation (one parallel job
-# per file in scenarios/), and publish a summary table of the results.
+# CI: on every pull request and every push to main, run the unit tests, then
+# every navigation scenario in its own headless Gazebo simulation (one
+# parallel job per file in scenarios/), and publish a summary table of the
+# results.
 name: CI
 
 on:
+  # Branches are tested once, in their pull request (on the result of merging
+  # them into main); main is tested again after each merge.
   push:
+    branches: [main]
   pull_request:
   workflow_dispatch:
 
