@@ -14,13 +14,14 @@ SCENARIOS = [validate_scenario(yaml.safe_load(p.read_text()))
 
 
 def test_sandbox_only_sets_the_spawn_position():
-    assert launch_args("tb3_sandbox", (-2.0, -0.5), "/ws") == ["x_pose:=-2.0", "y_pose:=-0.5"]
+    assert launch_args("tb3_sandbox", (-2.0, -0.5), "/ws") == {"x_pose": "-2.0", "y_pose": "-0.5"}
 
 
 def test_warehouse_sets_world_and_map():
-    args = launch_args("warehouse", (-5.5, 0.0), "/ws")
-    assert args == ["x_pose:=-5.5", "y_pose:=0.0",
-                    "world:=/ws/worlds/warehouse.sdf.xacro", "map:=/ws/maps/warehouse.yaml"]
+    assert launch_args("warehouse", (-5.5, 0.0), "/ws") == {
+        "x_pose": "-5.5", "y_pose": "0.0",
+        "world": "/ws/worlds/warehouse.sdf.xacro", "map": "/ws/maps/warehouse.yaml",
+    }
 
 
 @pytest.mark.parametrize("world", WORLDS)
