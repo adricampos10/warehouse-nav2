@@ -22,3 +22,16 @@ The map I use to read Nav2's code, in the spirit of the classic `move_base` diag
 - **The velocity command goes through two safety filters.** `/cmd_vel_nav` → `velocity_smoother` (speed and acceleration limits) → `collision_monitor` (slows or stops near obstacles) → `/cmd_vel` → the robot in Gazebo.
 - **Localization is separate.** `map_server` publishes the map; `amcl` matches `/scan` against it and publishes the `map → odom` transform.
 - **Lifecycle.** Every Nav2 node is a lifecycle node; `nav2_lifecycle_manager` configures and activates them in order at startup.
+
+## 03 · What happens when I open a pull request
+
+![What happens when I open a pull request](03_pull_request_flow.png)
+
+The CI run as a flowchart, from the push to the merge. Ovals are the start and the two possible ends, rectangles are steps, diamonds are decisions and parallelograms are data written along the way.
+
+- **Two jobs start in parallel** (the black bar): `unit-tests` runs pytest, and `list-scenarios` lists the files in `scenarios/`.
+- **Each scenario gets its own job** (purple), all of them in parallel: build the Docker image, start a fresh container with my launch file, set the initial pose, then send the goals one by one. The loop on the left is the `for` loop in `run_scenario.py`: if a goal isn't reached before the timeout, it stops sending goals. `metrics.evaluate()` then compares the run with what the scenario expects and writes `results/<scenario>.json`.
+- **If the unit tests fail**, the scenario jobs are skipped, but the `report` job still runs (it has `if: always()`), so the PR still gets a clear red result.
+- **The report decides**: it collects every JSON and writes the table. If the unit tests and every scenario passed, the required check is green and the PR auto-merges into `main`; otherwise the PR is blocked and `main` stays green until I fix it and push again.
+
+On my Mac, `scripts/run_scenarios.sh` follows the same steps for each scenario, one after another.
