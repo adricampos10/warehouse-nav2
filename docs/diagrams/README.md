@@ -35,3 +35,15 @@ The CI run as a flowchart, from the push to the merge. Ovals are the start and t
 - **The report decides**: it collects every JSON and writes the table. If the unit tests and every scenario passed, the required check is green and the PR auto-merges into `main`; otherwise the PR is blocked and `main` stays green until I fix it and push again.
 
 On my Mac, `scripts/run_scenarios.sh` follows the same steps for each scenario, one after another.
+
+## 04 · One scenario run, step by step
+
+![One scenario run, step by step](04_scenario_sequence.png)
+
+A UML sequence diagram of `scripts/run_scenarios.sh warehouse_shelf` on my Mac. Each box at the top is a participant and its dashed line is its lifeline; time runs downwards, and everything inside the dashed purple area runs inside the Docker container.
+
+- **Setting up**: `run_scenarios.sh` starts a fresh container, whose main process is my launch file. It asks `metrics.py`/`worlds.py` for the scenario's world, map and start, then starts Gazebo with the robot and Nav2.
+- **Driving**: `run_scenarios.sh` runs `run_scenario.py` inside the same container (`docker exec`). It sets the initial pose, waits for Nav2, and then sends the goals one by one (the inner `loop`): each is a `navigate_to_pose` action, and while Nav2 drives the robot through `/cmd_vel`, the script records `/odom` and `/scan`.
+- **Deciding**: `metrics.py` turns the recording into PASS or FAIL, the script writes `results/<name>.json` and exits with 0 or 1, and the container is stopped. After every scenario (the outer `loop`), `report.py` prints the summary table.
+
+Arrow styles follow UML: filled arrowheads are calls or commands, dashed arrows are replies, and open arrowheads on solid lines are asynchronous ROS topics. The narrow bars show when `sim.launch.py` and `run_scenario.py` are running. In CI, each scenario job runs one iteration of the outer loop.

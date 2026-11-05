@@ -1,0 +1,110 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1360" height="800" viewBox="0 0 1360 800" role="img" font-family="-apple-system, 'Helvetica Neue', Arial, sans-serif">
+<title>One scenario run, step by step</title>
+<desc>UML sequence diagram of scripts/run_scenarios.sh running one scenario: it starts a fresh container whose launch file brings up Gazebo and Nav2, then run_scenario.py sends each goal to Nav2, records /odom and /scan, evaluates the run with metrics.py and writes a JSON result; report.py prints the summary table.</desc>
+<defs><marker id="filled" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#444441"/></marker><marker id="open" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto"><path d="M0,0 L10,5 L0,10" fill="none" stroke="#444441" stroke-width="1.5"/></marker></defs>
+<rect width="1360" height="800" fill="#FFFFFF"/>
+<text x="30" y="36" font-size="22" font-weight="600" fill="#2C2C2A">One scenario run, step by step</text>
+<text x="30" y="62" font-size="13" fill="#5F5E5A">UML sequence diagram of scripts/run_scenarios.sh warehouse_shelf on my Mac (in CI, each job does the same for one file)</text>
+<rect x="545" y="74" width="740" height="676" rx="12" fill="#F6F5FE" stroke="#534AB7" stroke-width="0.8" stroke-dasharray="5 4"/>
+<text x="1275" y="88" text-anchor="end" font-size="11" fill="#534AB7">inside the Docker container</text>
+<path d="M70,128 L70,744" stroke="#8A8984" stroke-width="1" stroke-dasharray="4 4"/>
+<rect x="8" y="92" width="124" height="36" rx="6" fill="#F1EFE8" stroke="#5F5E5A" stroke-width="0.9"/>
+<text x="70" y="107" text-anchor="middle" font-size="12" font-weight="600" fill="#2C2C2A">Me</text>
+<text x="70" y="122" text-anchor="middle" font-size="12" font-weight="600" fill="#2C2C2A">(terminal)</text>
+<path d="M205,128 L205,744" stroke="#8A8984" stroke-width="1" stroke-dasharray="4 4"/>
+<rect x="143" y="92" width="124" height="36" rx="6" fill="#FAEEDA" stroke="#854F0B" stroke-width="0.9"/>
+<text x="205" y="114" text-anchor="middle" font-size="12" font-weight="600" fill="#633806">run_scenarios.sh</text>
+<path d="M340,128 L340,744" stroke="#8A8984" stroke-width="1" stroke-dasharray="4 4"/>
+<rect x="278" y="92" width="124" height="36" rx="6" fill="#FAEEDA" stroke="#854F0B" stroke-width="0.9"/>
+<text x="340" y="114" text-anchor="middle" font-size="12" font-weight="600" fill="#633806">report.py</text>
+<path d="M475,128 L475,744" stroke="#8A8984" stroke-width="1" stroke-dasharray="4 4"/>
+<rect x="413" y="92" width="124" height="36" rx="6" fill="#EEEDFE" stroke="#534AB7" stroke-width="0.9"/>
+<text x="475" y="114" text-anchor="middle" font-size="12" font-weight="600" fill="#3C3489">Docker</text>
+<path d="M610,128 L610,744" stroke="#8A8984" stroke-width="1" stroke-dasharray="4 4"/>
+<rect x="548" y="92" width="124" height="36" rx="6" fill="#FAEEDA" stroke="#854F0B" stroke-width="0.9"/>
+<text x="610" y="114" text-anchor="middle" font-size="12" font-weight="600" fill="#633806">sim.launch.py</text>
+<path d="M745,128 L745,744" stroke="#8A8984" stroke-width="1" stroke-dasharray="4 4"/>
+<rect x="683" y="92" width="124" height="36" rx="6" fill="#FFFFFF" stroke="#534AB7" stroke-width="0.9"/>
+<text x="745" y="107" text-anchor="middle" font-size="12" font-weight="600" fill="#3C3489">Gazebo</text>
+<text x="745" y="122" text-anchor="middle" font-size="12" font-weight="600" fill="#3C3489">+ robot</text>
+<path d="M880,128 L880,744" stroke="#8A8984" stroke-width="1" stroke-dasharray="4 4"/>
+<rect x="818" y="92" width="124" height="36" rx="6" fill="#FFFFFF" stroke="#534AB7" stroke-width="0.9"/>
+<text x="880" y="114" text-anchor="middle" font-size="12" font-weight="600" fill="#3C3489">Nav2</text>
+<path d="M1035,128 L1035,744" stroke="#8A8984" stroke-width="1" stroke-dasharray="4 4"/>
+<rect x="973" y="92" width="124" height="36" rx="6" fill="#FAEEDA" stroke="#854F0B" stroke-width="0.9"/>
+<text x="1035" y="114" text-anchor="middle" font-size="12" font-weight="600" fill="#633806">run_scenario.py</text>
+<path d="M1205,128 L1205,744" stroke="#8A8984" stroke-width="1" stroke-dasharray="4 4"/>
+<rect x="1143" y="92" width="124" height="36" rx="6" fill="#FAEEDA" stroke="#854F0B" stroke-width="0.9"/>
+<text x="1205" y="107" text-anchor="middle" font-size="12" font-weight="600" fill="#633806">metrics.py</text>
+<text x="1205" y="122" text-anchor="middle" font-size="12" font-weight="600" fill="#633806">worlds.py</text>
+<rect x="1030" y="342" width="10" height="308" fill="#FAEEDA" stroke="#854F0B" stroke-width="0.8"/>
+<rect x="605" y="216" width="10" height="456" fill="#FAEEDA" stroke="#854F0B" stroke-width="0.8"/>
+<rect x="150" y="164" width="1140" height="522" fill="none" stroke="#5F5E5A" stroke-width="0.9"/>
+<path d="M150,164 L194,164 L194,174 L186,181 L150,181 Z" fill="#FFFFFF" stroke="#5F5E5A" stroke-width="0.9"/>
+<text x="156" y="177" font-size="11" font-weight="600" fill="#2C2C2A">loop</text>
+<text x="202" y="177" font-size="11" fill="#5F5E5A">[each scenario file]</text>
+<rect x="700" y="440" width="410" height="110" fill="none" stroke="#5F5E5A" stroke-width="0.9"/>
+<path d="M700,440 L744,440 L744,450 L736,457 L700,457 Z" fill="#FFFFFF" stroke="#5F5E5A" stroke-width="0.9"/>
+<text x="706" y="453" font-size="11" font-weight="600" fill="#2C2C2A">loop</text>
+<text x="752" y="453" font-size="11" fill="#5F5E5A">[each goal, until one fails or times out]</text>
+<path d="M70,155 L205,155" fill="none" stroke="#444441" stroke-width="1.2" marker-end="url(#filled)"/>
+<text x="137.5" y="150" text-anchor="middle" font-size="11" fill="#2C2C2A">run_scenarios.sh warehouse_shelf</text>
+<path d="M205,200 L475,200" fill="none" stroke="#444441" stroke-width="1.2" marker-end="url(#filled)"/>
+<text x="340.0" y="195" text-anchor="middle" font-size="11" fill="#2C2C2A">docker run -v $PWD:/ws (fresh container)</text>
+<path d="M475,220 L605,220" fill="none" stroke="#444441" stroke-width="1.2" marker-end="url(#filled)"/>
+<text x="540.0" y="215" text-anchor="middle" font-size="11" fill="#2C2C2A">ros2 launch sim.launch.py</text>
+<path d="M615,240 L1205,240" fill="none" stroke="#444441" stroke-width="1.2" marker-end="url(#filled)"/>
+<text x="910.0" y="235" text-anchor="middle" font-size="11" fill="#2C2C2A">validate_scenario(), launch_args()</text>
+<path d="M1205,258 L615,258" fill="none" stroke="#444441" stroke-width="1.2" stroke-dasharray="6 4" marker-end="url(#open)"/>
+<text x="910.0" y="253" text-anchor="middle" font-size="11" fill="#2C2C2A">world, map, start</text>
+<path d="M615,278 L745,278" fill="none" stroke="#444441" stroke-width="1.2" marker-end="url(#filled)"/>
+<text x="680.0" y="273" text-anchor="middle" font-size="11" fill="#2C2C2A">start the world, spawn the robot</text>
+<path d="M615,298 L880,298" fill="none" stroke="#444441" stroke-width="1.2" marker-end="url(#filled)"/>
+<text x="747.5" y="293" text-anchor="middle" font-size="11" fill="#2C2C2A">start Nav2 (configure → activate)</text>
+<path d="M745,320 L880,320" fill="none" stroke="#444441" stroke-width="1.2" marker-end="url(#open)"/>
+<text x="812.5" y="315" text-anchor="middle" font-size="11" fill="#2C2C2A">/scan, /odom, /tf (continuously)</text>
+<path d="M205,344 L1030,344" fill="none" stroke="#444441" stroke-width="1.2" marker-end="url(#filled)"/>
+<text x="617.5" y="339" text-anchor="middle" font-size="11" fill="#2C2C2A">docker exec python3 run_scenario.py &lt;yaml&gt;</text>
+<path d="M1040,366 L1205,366" fill="none" stroke="#444441" stroke-width="1.2" marker-end="url(#filled)"/>
+<text x="1122.5" y="361" text-anchor="middle" font-size="11" fill="#2C2C2A">validate_scenario(yaml)</text>
+<path d="M1030,388 L880,388" fill="none" stroke="#444441" stroke-width="1.2" marker-end="url(#filled)"/>
+<text x="955.0" y="383" text-anchor="middle" font-size="11" fill="#2C2C2A">setInitialPose()</text>
+<path d="M1030,410 L880,410" fill="none" stroke="#444441" stroke-width="1.2" marker-end="url(#filled)"/>
+<text x="955.0" y="405" text-anchor="middle" font-size="11" fill="#2C2C2A">waitUntilNav2Active()</text>
+<path d="M880,430 L1030,430" fill="none" stroke="#444441" stroke-width="1.2" stroke-dasharray="6 4" marker-end="url(#open)"/>
+<text x="955.0" y="425" text-anchor="middle" font-size="11" fill="#2C2C2A">active</text>
+<path d="M1030,480 L880,480" fill="none" stroke="#444441" stroke-width="1.2" marker-end="url(#filled)"/>
+<text x="955.0" y="475" text-anchor="middle" font-size="11" fill="#2C2C2A">goToPose(): navigate_to_pose goal</text>
+<path d="M880,499 L745,499" fill="none" stroke="#444441" stroke-width="1.2" marker-end="url(#open)"/>
+<text x="812.5" y="494" text-anchor="middle" font-size="11" fill="#2C2C2A">/cmd_vel: drive</text>
+<path d="M745,518 L1030,518" fill="none" stroke="#444441" stroke-width="1.2" marker-end="url(#open)"/>
+<text x="887.5" y="513" text-anchor="middle" font-size="11" fill="#2C2C2A">/odom, /scan: recorded</text>
+<path d="M880,538 L1030,538" fill="none" stroke="#444441" stroke-width="1.2" stroke-dasharray="6 4" marker-end="url(#open)"/>
+<text x="955.0" y="533" text-anchor="middle" font-size="11" fill="#2C2C2A">result: SUCCEEDED or FAILED</text>
+<path d="M1040,572 L1205,572" fill="none" stroke="#444441" stroke-width="1.2" marker-end="url(#filled)"/>
+<text x="1122.5" y="567" text-anchor="middle" font-size="11" fill="#2C2C2A">path_length(), evaluate()</text>
+<path d="M1205,592 L1040,592" fill="none" stroke="#444441" stroke-width="1.2" stroke-dasharray="6 4" marker-end="url(#open)"/>
+<text x="1122.5" y="587" text-anchor="middle" font-size="11" fill="#2C2C2A">PASS / FAIL + reason</text>
+<path d="M1040,606 L1074,606 L1074,622 L1042,622" fill="none" stroke="#444441" stroke-width="1.2" marker-end="url(#filled)"/>
+<text x="1026" y="618" text-anchor="end" font-size="11" fill="#2C2C2A">write results/&lt;name&gt;.json</text>
+<path d="M1030,648 L205,648" fill="none" stroke="#444441" stroke-width="1.2" stroke-dasharray="6 4" marker-end="url(#open)"/>
+<text x="617.5" y="643" text-anchor="middle" font-size="11" fill="#2C2C2A">exit code 0 or 1</text>
+<path d="M205,672 L475,672" fill="none" stroke="#444441" stroke-width="1.2" marker-end="url(#filled)"/>
+<text x="340.0" y="667" text-anchor="middle" font-size="11" fill="#2C2C2A">docker stop (container removed)</text>
+<path d="M205,708 L340,708" fill="none" stroke="#444441" stroke-width="1.2" marker-end="url(#filled)"/>
+<text x="272.5" y="703" text-anchor="middle" font-size="11" fill="#2C2C2A">report.py results/*.json</text>
+<path d="M340,730 L70,730" fill="none" stroke="#444441" stroke-width="1.2" stroke-dasharray="6 4" marker-end="url(#open)"/>
+<text x="205.0" y="725" text-anchor="middle" font-size="11" fill="#2C2C2A">summary table</text>
+<path d="M30,772 L70,772" stroke="#444441" stroke-width="1.2" marker-end="url(#filled)"/>
+<text x="78" y="776" font-size="12" fill="#444441">call or command</text>
+<path d="M200,772 L240,772" stroke="#444441" stroke-width="1.2" stroke-dasharray="6 4" marker-end="url(#open)"/>
+<text x="248" y="776" font-size="12" fill="#444441">return / result</text>
+<path d="M370,772 L410,772" stroke="#444441" stroke-width="1.2" marker-end="url(#open)"/>
+<text x="418" y="776" font-size="12" fill="#444441">ROS topic (asynchronous)</text>
+<rect x="580" y="764" width="10" height="16" fill="#FAEEDA" stroke="#854F0B" stroke-width="0.8"/>
+<text x="598" y="776" font-size="12" fill="#444441">activation: the script is running</text>
+<rect x="830" y="765" width="22" height="14" rx="3" fill="#FAEEDA" stroke="#854F0B" stroke-width="0.8"/>
+<text x="860" y="776" font-size="12" fill="#444441">my code</text>
+<rect x="930" y="765" width="22" height="14" rx="3" fill="#FFFFFF" stroke="#534AB7" stroke-width="0.8"/>
+<text x="960" y="776" font-size="12" fill="#444441">ROS 2 software (not mine)</text>
+</svg>
