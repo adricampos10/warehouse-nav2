@@ -5,7 +5,8 @@ Run inside the container while the Nav2 simulation is up:
     python3 /ws/scripts/run_scenario.py /ws/scenarios/short_goal.yaml /ws/results
 
 It drives the robot through the scenario's goals, records the time, the path
-travelled (/odom) and the closest laser reading (/scan), and writes
+travelled (/odom) and how close the robot's edge came to an obstacle (/scan,
+moved into the robot's frame with TF), and writes
 <results>/<scenario>.json. Exit code 0 means the scenario passed.
 """
 import json
@@ -14,23 +15,35 @@ import time
 from pathlib import Path
 
 import rclpy
+import tf2_ros
 import yaml
+from laser_geometry import LaserProjection
 from nav2_simple_commander.robot_navigator import BasicNavigator, TaskResult
 from nav_msgs.msg import Odometry
 from rclpy.qos import qos_profile_sensor_data
+from rclpy.time import Time
 from sensor_msgs.msg import LaserScan
+from sensor_msgs_py import point_cloud2
+from tf2_sensor_msgs import do_transform_cloud
 
-from metrics import evaluate, min_valid_range, path_length, validate_scenario
+from metrics import edge_clearance, evaluate, path_length, validate_scenario
 from nav_utils import make_pose
 
 
+ROBOT_FRAME = "base_link"  # the frame the robot's footprint is centred on
+
+
 class Recorder:
-    """Collects robot positions and the closest laser reading while recording."""
+    """Collects robot positions and the smallest edge clearance while recording."""
 
     def __init__(self, node):
         self.recording = False
         self.positions = []
-        self.min_range = None
+        self.min_clearance = None
+        self.projector = LaserProjection()
+        # TF knows where the laser is mounted (a static transform from the URDF)
+        self.tf_buffer = tf2_ros.Buffer()
+        self.tf_listener = tf2_ros.TransformListener(self.tf_buffer, node)
         # Sensor-data QoS (best effort) matches the simulation whether it
         # publishes these topics as reliable or best effort.
         node.create_subscription(Odometry, "/odom", self.on_odom, qos_profile_sensor_data)
@@ -42,10 +55,20 @@ class Recorder:
             self.positions.append((p.x, p.y))
 
     def on_scan(self, msg):
-        if self.recording:
-            closest = min_valid_range(msg.ranges, msg.range_min, msg.range_max)
-            if closest is not None and (self.min_range is None or closest < self.min_range):
-                self.min_range = closest
+        if not self.recording:
+            return
+        try:
+            laser_to_robot = self.tf_buffer.lookup_transform(ROBOT_FRAME, msg.header.frame_id, Time())
+        except tf2_ros.TransformException:
+            return  # TF not received yet; the next scan tries again
+        # Ranges (polar, in the laser's frame) -> points (x, y) in the robot's frame.
+        # projectLaser drops readings outside [range_min, range_max], inf and NaN.
+        cloud = do_transform_cloud(self.projector.projectLaser(msg), laser_to_robot)
+        points = [(float(p[0]), float(p[1]))
+                  for p in point_cloud2.read_points(cloud, field_names=("x", "y"), skip_nans=True)]
+        gap = edge_clearance(points)
+        if gap is not None and (self.min_clearance is None or gap < self.min_clearance):
+            self.min_clearance = gap
 
 
 def main():
@@ -79,7 +102,7 @@ def main():
     recorder.recording = False
 
     passed, reason = evaluate(scenario, {
-        "goals_reached": goals_reached, "timed_out": timed_out, "min_range": recorder.min_range,
+        "goals_reached": goals_reached, "timed_out": timed_out, "clearance": recorder.min_clearance,
     })
     result = {
         "name": name,
@@ -91,7 +114,7 @@ def main():
         "goals_total": len(scenario["goals"]),
         "elapsed": round(elapsed, 2),
         "path_length": round(path_length(recorder.positions), 3),
-        "min_range": None if recorder.min_range is None else round(recorder.min_range, 3),
+        "clearance": None if recorder.min_clearance is None else round(recorder.min_clearance, 3),
     }
     results_dir.mkdir(parents=True, exist_ok=True)
     (results_dir / f"{name}.json").write_text(json.dumps(result, indent=2) + "\n")
