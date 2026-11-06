@@ -47,3 +47,15 @@ A UML sequence diagram of `scripts/run_scenarios.sh warehouse_shelf` on my Mac. 
 - **Deciding**: `metrics.py` turns the recording into PASS or FAIL, the script writes `results/<name>.json` and exits with 0 or 1, and the container is stopped. After every scenario (the outer `loop`), `report.py` prints the summary table.
 
 Arrow styles follow UML: filled arrowheads are calls or commands, dashed arrows are replies, and open arrowheads on solid lines are asynchronous ROS topics. The narrow bars show when `sim.launch.py` and `run_scenario.py` are running. In CI, each scenario job runs one iteration of the outer loop.
+
+## 05 · How data flows through metrics.py
+
+![How data flows through metrics.py](05_metrics_data_flow.png)
+
+A data flow diagram of one scenario run. Unlike diagram 04, it ignores time and who calls whom: each arrow is a piece of data, labelled with what it carries, and the bold boxes are the functions in `metrics.py`, which is plain Python with no ROS, so all of it is unit-tested.
+
+- **The scenario**: `validate_scenario()` checks the YAML and fills in the defaults. The goals, timeout and start go to the goal loop in `run_scenario.py`; what the scenario expects and the minimum clearance go to the judge.
+- **Nav2**: the goal loop sends one goal at a time and gets a result for each, which gives `goals_reached` and `timed_out`.
+- **`/odom`**: every message becomes an `(x, y)` position, and `path_length()` turns the list into metres travelled. That number only goes into the JSON; it does not decide anything.
+- **`/scan`**: `min_valid_range()` turns each laser scan into its closest valid reading, and `Recorder.on_scan()` keeps the smallest one of the run as `min_range`.
+- **The judge**: `evaluate()` combines those three inputs into `passed` and `reason`, and `main()` writes everything to `results/<name>.json`. After every scenario has run, `format_table()` turns all the JSON files into the summary table.

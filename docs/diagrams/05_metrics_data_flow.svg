@@ -1,0 +1,118 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1360" height="800" viewBox="0 0 1360 800" role="img" font-family="-apple-system, 'Helvetica Neue', Arial, sans-serif">
+<title>How data flows through metrics.py</title>
+<defs><marker id="a" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#444441"/></marker></defs>
+<rect width="1360" height="800" fill="#FFFFFF"/>
+<text x="30" y="36" font-size="22" font-weight="600" fill="#2C2C2A">How data flows through metrics.py</text>
+<text x="30" y="62" font-size="13" fill="#5F5E5A">Data flow diagram of one scenario run: each arrow is data, labelled with what it carries. Bold boxes are the functions in metrics.py.</text>
+<text x="125" y="100" text-anchor="middle" font-size="12" font-weight="600" fill="#888780">WHERE THE DATA COMES FROM</text>
+<text x="395" y="100" text-anchor="middle" font-size="12" font-weight="600" fill="#888780">FIRST STEP</text>
+<text x="660" y="100" text-anchor="middle" font-size="12" font-weight="600" fill="#888780">SECOND STEP</text>
+<text x="930" y="100" text-anchor="middle" font-size="12" font-weight="600" fill="#888780">THE JUDGE</text>
+<text x="1200" y="100" text-anchor="middle" font-size="12" font-weight="600" fill="#888780">WHAT IS SAVED</text>
+<rect x="1100.0" y="240" width="200" height="360" rx="8" fill="#F1EFE8" stroke="#5F5E5A" stroke-width="0.9"/>
+<text x="1200" y="264" text-anchor="middle" font-size="13" font-weight="600" fill="#2C2C2A">results/&lt;name&gt;.json</text>
+<text x="1200" y="282" text-anchor="middle" font-size="11" fill="#5F5E5A">written by main() in run_scenario.py</text>
+<text x="1118.0" y="318" font-size="12" fill="#2C2C2A">• name, description, expect</text>
+<text x="1118.0" y="340" font-size="12" fill="#2C2C2A">• passed, reason</text>
+<text x="1118.0" y="362" font-size="12" fill="#2C2C2A">• goals_reached, goals_total</text>
+<text x="1118.0" y="384" font-size="12" fill="#2C2C2A">• elapsed</text>
+<text x="1118.0" y="406" font-size="12" fill="#2C2C2A">• path_length</text>
+<text x="1118.0" y="428" font-size="12" fill="#2C2C2A">• min_range</text>
+<text x="1200" y="578" text-anchor="middle" font-size="10.5" fill="#888780">main() also copies goals_reached,</text>
+<text x="1200" y="591" text-anchor="middle" font-size="10.5" fill="#888780">elapsed and min_range in here</text>
+<rect x="30.0" y="122.0" width="190" height="56" rx="8" fill="#F1EFE8" stroke="#5F5E5A" stroke-width="0.9"/>
+<text x="125" y="147" text-anchor="middle" font-size="13" font-weight="600" fill="#2C2C2A">scenarios/&lt;name&gt;.yaml</text>
+<text x="125" y="165" text-anchor="middle" font-size="11" fill="#5F5E5A">my scenario file</text>
+<rect x="295.0" y="122.0" width="200" height="56" rx="8" fill="#FAEEDA" stroke="#854F0B" stroke-width="2.4"/>
+<text x="395" y="147" text-anchor="middle" font-size="13" font-weight="600" fill="#633806">validate_scenario()</text>
+<text x="395" y="165" text-anchor="middle" font-size="11" fill="#5F5E5A">metrics.py</text>
+<path d="M220,150 L295,150" fill="none" stroke="#444441" stroke-width="1.3" marker-end="url(#a)"/>
+<text x="257" y="142" text-anchor="middle" font-size="11.5" fill="#2C2C2A">raw dict</text>
+<path d="M495,150 L930,150" fill="none" stroke="#444441" stroke-width="1.3"/>
+<circle cx="660" cy="150" r="3.5" fill="#444441"/>
+<text x="577" y="142" text-anchor="middle" font-size="11.5" fill="#2C2C2A">scenario dict</text>
+<text x="577" y="166" text-anchor="middle" font-size="10.5" fill="#888780">(defaults filled in)</text>
+<path d="M660,150 L660,257" fill="none" stroke="#444441" stroke-width="1.3" marker-end="url(#a)"/>
+<text x="668" y="190" text-anchor="start" font-size="11.5" fill="#2C2C2A">goals, timeout,</text>
+<text x="668" y="204" text-anchor="start" font-size="11.5" fill="#2C2C2A">start</text>
+<path d="M930,150 L930,257" fill="none" stroke="#444441" stroke-width="1.3" marker-end="url(#a)"/>
+<text x="938" y="190" text-anchor="start" font-size="11.5" fill="#2C2C2A">expect, min_clearance,</text>
+<text x="938" y="204" text-anchor="start" font-size="11.5" fill="#2C2C2A">number of goals</text>
+<rect x="30.0" y="257.0" width="190" height="56" rx="8" fill="#FFFFFF" stroke="#534AB7" stroke-width="0.9"/>
+<text x="125" y="282" text-anchor="middle" font-size="13" font-weight="600" fill="#3C3489">Nav2</text>
+<text x="125" y="300" text-anchor="middle" font-size="11" fill="#5F5E5A">navigate_to_pose action</text>
+<rect x="570.0" y="257.0" width="180" height="56" rx="8" fill="#FAEEDA" stroke="#854F0B" stroke-width="0.9"/>
+<text x="660" y="282" text-anchor="middle" font-size="13" font-weight="600" fill="#633806">goal loop in main()</text>
+<text x="660" y="300" text-anchor="middle" font-size="11" fill="#5F5E5A">run_scenario.py</text>
+<rect x="835.0" y="257.0" width="190" height="56" rx="8" fill="#FAEEDA" stroke="#854F0B" stroke-width="2.4"/>
+<text x="930" y="282" text-anchor="middle" font-size="13" font-weight="600" fill="#633806">evaluate()</text>
+<text x="930" y="300" text-anchor="middle" font-size="11" fill="#5F5E5A">metrics.py</text>
+<path d="M570,275 L220,275" fill="none" stroke="#444441" stroke-width="1.3" marker-end="url(#a)"/>
+<text x="390" y="268" text-anchor="middle" font-size="11.5" fill="#2C2C2A">one goal pose at a time (goToPose)</text>
+<path d="M220,297 L570,297" fill="none" stroke="#444441" stroke-width="1.3" marker-end="url(#a)"/>
+<text x="390" y="313" text-anchor="middle" font-size="11.5" fill="#2C2C2A">result per goal: SUCCEEDED / FAILED</text>
+<path d="M750,285 L835,285" fill="none" stroke="#444441" stroke-width="1.3" marker-end="url(#a)"/>
+<text x="792" y="263" text-anchor="middle" font-size="11.5" fill="#2C2C2A">goals_reached,</text>
+<text x="792" y="277" text-anchor="middle" font-size="11.5" fill="#2C2C2A">timed_out</text>
+<path d="M1025,285 L1100,285" fill="none" stroke="#444441" stroke-width="1.3" marker-end="url(#a)"/>
+<text x="1062" y="263" text-anchor="middle" font-size="11.5" fill="#2C2C2A">passed,</text>
+<text x="1062" y="277" text-anchor="middle" font-size="11.5" fill="#2C2C2A">reason</text>
+<rect x="30.0" y="392.0" width="190" height="56" rx="8" fill="#FFFFFF" stroke="#534AB7" stroke-width="0.9"/>
+<text x="125" y="417" text-anchor="middle" font-size="13" font-weight="600" fill="#3C3489">/odom</text>
+<text x="125" y="435" text-anchor="middle" font-size="11" fill="#5F5E5A">Gazebo, a stream of positions</text>
+<rect x="295.0" y="392.0" width="200" height="56" rx="8" fill="#FAEEDA" stroke="#854F0B" stroke-width="0.9"/>
+<text x="395" y="417" text-anchor="middle" font-size="13" font-weight="600" fill="#633806">Recorder.on_odom()</text>
+<text x="395" y="435" text-anchor="middle" font-size="11" fill="#5F5E5A">run_scenario.py</text>
+<rect x="570.0" y="392.0" width="180" height="56" rx="8" fill="#FAEEDA" stroke="#854F0B" stroke-width="2.4"/>
+<text x="660" y="417" text-anchor="middle" font-size="13" font-weight="600" fill="#633806">path_length()</text>
+<text x="660" y="435" text-anchor="middle" font-size="11" fill="#5F5E5A">metrics.py</text>
+<path d="M220,420 L295,420" fill="none" stroke="#444441" stroke-width="1.3" marker-end="url(#a)"/>
+<text x="257" y="398" text-anchor="middle" font-size="11.5" fill="#2C2C2A">Odometry</text>
+<text x="257" y="412" text-anchor="middle" font-size="11.5" fill="#2C2C2A">messages</text>
+<path d="M495,420 L570,420" fill="none" stroke="#444441" stroke-width="1.3" marker-end="url(#a)"/>
+<text x="532" y="398" text-anchor="middle" font-size="11.5" fill="#2C2C2A">positions</text>
+<text x="532" y="412" text-anchor="middle" font-size="11.5" fill="#2C2C2A">[(x, y), …]</text>
+<path d="M750,420 L1100,420" fill="none" stroke="#444441" stroke-width="1.3" marker-end="url(#a)"/>
+<text x="845" y="412" text-anchor="middle" font-size="11.5" fill="#2C2C2A">metres travelled</text>
+<rect x="30.0" y="527.0" width="190" height="56" rx="8" fill="#FFFFFF" stroke="#534AB7" stroke-width="0.9"/>
+<text x="125" y="552" text-anchor="middle" font-size="13" font-weight="600" fill="#3C3489">/scan</text>
+<text x="125" y="570" text-anchor="middle" font-size="11" fill="#5F5E5A">Gazebo, 360 ranges per msg</text>
+<rect x="295.0" y="527.0" width="200" height="56" rx="8" fill="#FAEEDA" stroke="#854F0B" stroke-width="2.4"/>
+<text x="395" y="552" text-anchor="middle" font-size="13" font-weight="600" fill="#633806">min_valid_range()</text>
+<text x="395" y="570" text-anchor="middle" font-size="11" fill="#5F5E5A">metrics.py, once per scan</text>
+<rect x="570.0" y="527.0" width="180" height="56" rx="8" fill="#FAEEDA" stroke="#854F0B" stroke-width="0.9"/>
+<text x="660" y="552" text-anchor="middle" font-size="13" font-weight="600" fill="#633806">Recorder.on_scan()</text>
+<text x="660" y="570" text-anchor="middle" font-size="11" fill="#5F5E5A">run_scenario.py</text>
+<path d="M220,555 L295,555" fill="none" stroke="#444441" stroke-width="1.3" marker-end="url(#a)"/>
+<text x="257" y="519" text-anchor="middle" font-size="11.5" fill="#2C2C2A">ranges, range_min,</text>
+<text x="257" y="533" text-anchor="middle" font-size="11.5" fill="#2C2C2A">range_max</text>
+<path d="M495,555 L570,555" fill="none" stroke="#444441" stroke-width="1.3" marker-end="url(#a)"/>
+<text x="532" y="533" text-anchor="middle" font-size="11.5" fill="#2C2C2A">closest</text>
+<text x="532" y="547" text-anchor="middle" font-size="11.5" fill="#2C2C2A">or None</text>
+<path d="M750,555 L930,555 L930,313" fill="none" stroke="#444441" stroke-width="1.3" marker-end="url(#a)"/>
+<text x="938" y="533" text-anchor="start" font-size="11.5" fill="#2C2C2A">min_range</text>
+<text x="938" y="547" text-anchor="start" font-size="11.5" fill="#2C2C2A">(smallest of the run)</text>
+<rect x="1100.0" y="672.0" width="200" height="56" rx="8" fill="#FAEEDA" stroke="#854F0B" stroke-width="2.4"/>
+<text x="1200" y="697" text-anchor="middle" font-size="13" font-weight="600" fill="#633806">format_table()</text>
+<text x="1200" y="715" text-anchor="middle" font-size="11" fill="#5F5E5A">metrics.py, called by report.py</text>
+<rect x="570.0" y="672.0" width="180" height="56" rx="8" fill="#F1EFE8" stroke="#5F5E5A" stroke-width="0.9"/>
+<text x="660" y="697" text-anchor="middle" font-size="13" font-weight="600" fill="#2C2C2A">summary table</text>
+<text x="660" y="715" text-anchor="middle" font-size="11" fill="#5F5E5A">my terminal / GitHub job summary</text>
+<path d="M1200,600 L1200,672" fill="none" stroke="#444441" stroke-width="1.3" marker-end="url(#a)"/>
+<text x="1208" y="632" text-anchor="start" font-size="11.5" fill="#2C2C2A">every results/*.json</text>
+<text x="1208" y="646" text-anchor="start" font-size="11.5" fill="#2C2C2A">(one dict per scenario)</text>
+<path d="M1100.0,700 L750.0,700" fill="none" stroke="#444441" stroke-width="1.3" marker-end="url(#a)"/>
+<text x="930" y="692" text-anchor="middle" font-size="11.5" fill="#2C2C2A">Markdown table: | Scenario | Result | … |</text>
+<path d="M30,637.5 L1330,637.5" stroke="#B4B2A9" stroke-width="1" stroke-dasharray="2 4"/>
+<text x="30" y="653.5" font-size="11" fill="#5F5E5A">later, after every scenario has run</text>
+<rect x="30" y="763" width="22" height="14" rx="3" fill="#FAEEDA" stroke="#854F0B" stroke-width="2.2"/>
+<text x="60" y="774" font-size="12" fill="#444441">function in metrics.py (pure Python, no ROS)</text>
+<rect x="381.6" y="763" width="22" height="14" rx="3" fill="#FAEEDA" stroke="#854F0B" stroke-width="0.9"/>
+<text x="411.6" y="774" font-size="12" fill="#444441">other code of mine</text>
+<rect x="566.8" y="763" width="22" height="14" rx="3" fill="#FFFFFF" stroke="#534AB7" stroke-width="0.9"/>
+<text x="596.8" y="774" font-size="12" fill="#444441">ROS 2 (not mine)</text>
+<rect x="739.1999999999999" y="763" width="22" height="14" rx="3" fill="#F1EFE8" stroke="#5F5E5A" stroke-width="0.9"/>
+<text x="769.1999999999999" y="774" font-size="12" fill="#444441">file or output</text>
+<path d="M898.8,770 L938.8,770" stroke="#444441" stroke-width="1.3" marker-end="url(#a)"/>
+<text x="946.8" y="774" font-size="12" fill="#444441">data, labelled with what it carries</text>
+</svg>
