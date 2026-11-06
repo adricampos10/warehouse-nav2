@@ -53,19 +53,19 @@ timeout: 180
 scripts/run_scenarios.sh              # every scenario
 scripts/run_scenarios.sh short_goal   # just one
 ```
-Every scenario gets a fresh headless simulation in its own container. The image sets `ROS_AUTOMATIC_DISCOVERY_RANGE=LOCALHOST`, so ROS only discovers nodes inside each container, and a scenario can run while I watch another simulation in Lichtblick (before that, the two robots' topics got mixed up). [`run_scenario.py`](scripts/run_scenario.py) drives the robot through the goals while recording `/odom` and `/scan`, then saves `results/<scenario>.json`. A scenario passes if the robot reaches every goal in time without getting closer than 0.15 m to an obstacle (or, for `expect: failure`, if Nav2 gives up). The script ends with a summary table; this is a run on my Mac:
+Every scenario gets a fresh headless simulation in its own container. The image sets `ROS_AUTOMATIC_DISCOVERY_RANGE=LOCALHOST`, so ROS only discovers nodes inside each container, and a scenario can run while I watch another simulation in Lichtblick (before that, the two robots' topics got mixed up). [`run_scenario.py`](scripts/run_scenario.py) drives the robot through the goals while recording `/odom` and `/scan`, then saves `results/<scenario>.json`. A scenario passes if the robot reaches every goal in time without its edge getting closer than 0.05 m to an obstacle (the closest laser reading minus the robot's 0.22 m radius, the same radius Nav2 uses) (or, for `expect: failure`, if Nav2 gives up). The script ends with a summary table; this is a run on my Mac:
 
 | Scenario | Result | Goals | Time (s) | Path (m) | Min clearance (m) | Notes |
 |---|---|---|---|---|---|---|
-| cross_map | PASS | 1/1 | 25.6 | 4.61 | 0.36 | all goals reached |
-| patrol_loop | PASS | 4/4 | 50.7 | 11.52 | 0.32 | all goals reached |
-| short_goal | PASS | 1/1 | 6.1 | 2.31 | 0.36 | all goals reached |
-| unreachable_goal | PASS | 0/1 | 0.0 | 0.00 | 0.48 | failed as expected |
-| warehouse_narrow_aisle | PASS | 3/3 | 27.9 | 11.30 | 0.41 | all goals reached |
-| warehouse_patrol | PASS | 3/3 | 99.3 | 39.76 | 0.71 | all goals reached |
-| warehouse_shelf | PASS | 1/1 | 18.2 | 7.11 | 0.49 | all goals reached |
+| cross_map | PASS | 1/1 | 25.6 | 4.61 | 0.14 | all goals reached |
+| patrol_loop | PASS | 4/4 | 50.7 | 11.52 | 0.10 | all goals reached |
+| short_goal | PASS | 1/1 | 6.1 | 2.31 | 0.14 | all goals reached |
+| unreachable_goal | PASS | 0/1 | 0.0 | 0.00 | 0.26 | failed as expected |
+| warehouse_narrow_aisle | PASS | 3/3 | 27.9 | 11.30 | 0.19 | all goals reached |
+| warehouse_patrol | PASS | 3/3 | 99.3 | 39.76 | 0.49 | all goals reached |
+| warehouse_shelf | PASS | 1/1 | 18.2 | 7.11 | 0.27 | all goals reached |
 
-The narrow aisle taught me something: my first version only had goals at both ends, and the robot passed with a minimum clearance of 0.80 m, which is impossible inside a 1.0 m aisle. The planner had gone around the shelves, because the inflated costmap makes the narrow aisle expensive. A goal in the middle of the aisle forces it through, and now the clearance (0.41 m) proves it.
+The narrow aisle taught me something: my first version only had goals at both ends, and the robot passed with its laser never closer than 0.80 m to anything, which is impossible inside a 1.0 m aisle. The planner had gone around the shelves, because the inflated costmap makes the narrow aisle expensive. A goal in the middle of the aisle forces it through, and now the clearance (0.19 m from the robot's edge) proves it.
 
 The pass/fail logic and the metrics live in [`metrics.py`](scripts/metrics.py), with no ROS imports, so they are unit-tested with pytest in milliseconds, together with the warehouse generator and a check that every warehouse scenario starts and ends in free space on the map:
 ```bash

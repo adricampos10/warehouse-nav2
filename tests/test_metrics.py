@@ -5,8 +5,8 @@ from pathlib import Path
 import pytest
 import yaml
 
-from metrics import (evaluate, format_table, min_valid_range, path_length,
-                     validate_scenario)
+from metrics import (ROBOT_RADIUS, clearance, evaluate, format_table, min_valid_range,
+                     path_length, validate_scenario)
 
 SCENARIOS = sorted((Path(__file__).parent.parent / "scenarios").glob("*.yaml"))
 
@@ -27,7 +27,7 @@ def test_defaults_are_filled_in():
     s = scenario()
     assert s["expect"] == "success"
     assert s["world"] == "tb3_sandbox"
-    assert s["min_clearance"] == pytest.approx(0.15)
+    assert s["min_clearance"] == pytest.approx(0.05)
     assert s["goals"] == [(1.0, 0.0), (2.0, 0.0)]
 
 
@@ -69,6 +69,15 @@ def test_min_valid_range_with_no_valid_readings_is_none():
     assert min_valid_range([math.inf, math.nan], 0.12, 3.5) is None
 
 
+def test_clearance_is_measured_from_the_robot_edge():
+    assert ROBOT_RADIUS == pytest.approx(0.22)  # Nav2's robot_radius for the Burger
+    assert clearance(0.30) == pytest.approx(0.08)
+
+
+def test_clearance_without_laser_data_is_none():
+    assert clearance(None) is None
+
+
 # --- evaluate -----------------------------------------------------------------
 
 def test_all_goals_reached_passes():
@@ -88,9 +97,18 @@ def test_timeout_fails_even_if_goals_count_matches():
 
 
 def test_too_close_to_an_obstacle_fails():
-    passed, reason = evaluate(scenario(), run(min_range=0.10))
+    # 0.25 m from the laser is only 0.03 m from the robot's edge
+    passed, reason = evaluate(scenario(), run(min_range=0.25))
     assert not passed
-    assert "too close" in reason
+    assert reason == "too close to an obstacle: 0.03 m from the robot's edge (limit 0.05 m)"
+
+
+def test_just_outside_the_clearance_limit_passes():
+    assert evaluate(scenario(), run(min_range=0.28))[0]
+
+
+def test_a_scenario_can_ask_for_more_clearance():
+    assert not evaluate(scenario(min_clearance=0.10), run(min_range=0.28))[0]
 
 
 def test_missing_laser_data_does_not_fail_on_clearance():
@@ -117,6 +135,6 @@ def test_format_table():
     ]
     table = format_table(results)
     lines = table.splitlines()
-    assert lines[2] == "| a | PASS | 1/1 | 20.0 | 2.50 | 0.31 | ok |"
+    assert lines[2] == "| a | PASS | 1/1 | 20.0 | 2.50 | 0.09 | ok |"  # 0.31 - 0.22
     assert lines[3] == "| b | FAIL | 0/1 | 12.3 | - | - | x |"
     assert table.endswith("1/2 scenarios passed")

@@ -1,6 +1,6 @@
 """Scenario checks and metrics, kept free of ROS so they can be unit-tested.
 
-run_scenarios.py collects the raw data in the simulation (goals reached,
+run_scenario.py collects the raw data in the simulation (goals reached,
 time, robot positions, laser ranges); the functions here turn it into
 pass/fail results and a summary table.
 """
@@ -8,7 +8,10 @@ import math
 
 from worlds import DEFAULT_WORLD, WORLDS
 
-DEFAULT_MIN_CLEARANCE = 0.15  # metres from the laser to the nearest obstacle
+# The TurtleBot3 Burger is modelled as a circle, the same robot_radius that
+# Nav2's costmaps use in nav2_params.yaml.
+ROBOT_RADIUS = 0.22
+DEFAULT_MIN_CLEARANCE = 0.05  # metres from the robot's edge to the nearest obstacle
 EXPECTATIONS = ("success", "failure")
 
 
@@ -64,6 +67,15 @@ def min_valid_range(ranges, range_min, range_max):
     return min(valid) if valid else None
 
 
+def clearance(min_range, robot_radius=ROBOT_RADIUS):
+    """Distance from the robot's edge to the nearest obstacle, or None without laser data.
+
+    The laser sits at the centre of the round robot, so the gap between the
+    robot's edge and an obstacle is the laser reading minus the radius.
+    """
+    return None if min_range is None else min_range - robot_radius
+
+
 def evaluate(scenario, run):
     """Decide whether a scenario passed.
 
@@ -82,8 +94,9 @@ def evaluate(scenario, run):
         return False, f"timed out after {run['goals_reached']}/{total} goals"
     if not reached_all:
         return False, f"reached {run['goals_reached']}/{total} goals"
-    if run["min_range"] is not None and run["min_range"] < scenario["min_clearance"]:
-        return False, (f"too close to an obstacle: {run['min_range']:.2f} m "
+    gap = clearance(run["min_range"])
+    if gap is not None and gap < scenario["min_clearance"]:
+        return False, (f"too close to an obstacle: {gap:.2f} m from the robot's edge "
                        f"(limit {scenario['min_clearance']:.2f} m)")
     return True, "all goals reached"
 
@@ -101,7 +114,7 @@ def format_table(results):
         lines.append(
             f"| {r['name']} | {'PASS' if r['passed'] else 'FAIL'} "
             f"| {r['goals_reached']}/{r['goals_total']} | {num(r['elapsed'], 1)} "
-            f"| {num(r['path_length'], 2)} | {num(r['min_range'], 2)} | {r['reason']} |"
+            f"| {num(r['path_length'], 2)} | {num(clearance(r['min_range']), 2)} | {r['reason']} |"
         )
     passed = sum(r["passed"] for r in results)
     lines.append("")
