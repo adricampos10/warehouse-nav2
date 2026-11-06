@@ -111,8 +111,14 @@ def test_a_scenario_can_ask_for_more_clearance():
     assert not evaluate(scenario(min_clearance=0.10), run(min_range=0.28))[0]
 
 
-def test_missing_laser_data_does_not_fail_on_clearance():
-    assert evaluate(scenario(), run(min_range=None))[0]
+def test_missing_laser_data_fails():
+    passed, reason = evaluate(scenario(), run(min_range=None))
+    assert not passed
+    assert "no valid laser data" in reason
+
+
+def test_expected_failure_does_not_need_laser_data():
+    assert evaluate(scenario(expect="failure"), run(goals_reached=0, min_range=None))[0]
 
 
 def test_expected_failure_that_fails_passes():

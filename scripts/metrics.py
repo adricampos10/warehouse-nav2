@@ -81,6 +81,10 @@ def evaluate(scenario, run):
 
     run is a dict with goals_reached, timed_out and min_range (None if no
     laser data was seen). Returns (passed, reason).
+
+    A run that should succeed also needs laser data: without it the clearance
+    cannot be checked, so a broken /scan must not pass silently. Expected
+    failures only check that Nav2 gave up, so they do not need it.
     """
     total = len(scenario["goals"])
     reached_all = run["goals_reached"] == total and not run["timed_out"]
@@ -95,7 +99,9 @@ def evaluate(scenario, run):
     if not reached_all:
         return False, f"reached {run['goals_reached']}/{total} goals"
     gap = clearance(run["min_range"])
-    if gap is not None and gap < scenario["min_clearance"]:
+    if gap is None:
+        return False, "no valid laser data on /scan, so the clearance could not be checked"
+    if gap < scenario["min_clearance"]:
         return False, (f"too close to an obstacle: {gap:.2f} m from the robot's edge "
                        f"(limit {scenario['min_clearance']:.2f} m)")
     return True, "all goals reached"
