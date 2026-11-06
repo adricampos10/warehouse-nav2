@@ -1,15 +1,16 @@
 """Scenario checks and metrics, kept free of ROS so they can be unit-tested.
 
 run_scenario.py collects the raw data in the simulation (goals reached,
-time, robot positions, laser ranges); the functions here turn it into
+time, robot positions, laser points around the robot); the functions here turn it into
 pass/fail results and a summary table.
 """
 import math
 
 from worlds import DEFAULT_WORLD, WORLDS
 
-# The TurtleBot3 Burger is modelled as a circle, the same robot_radius that
-# Nav2's costmaps use in nav2_params.yaml.
+# The TurtleBot3 Waffle (about 0.28 x 0.31 m) is modelled as a circle around
+# base_link that covers its body: the same robot_radius that Nav2's costmaps
+# use in nav2_params.yaml.
 ROBOT_RADIUS = 0.22
 DEFAULT_MIN_CLEARANCE = 0.05  # metres from the robot's edge to the nearest obstacle
 EXPECTATIONS = ("success", "failure")
@@ -57,30 +58,24 @@ def path_length(points):
     return sum(math.dist(a, b) for a, b in zip(points, points[1:]))
 
 
-def min_valid_range(ranges, range_min, range_max):
-    """Shortest valid laser reading, or None if there is none.
+def edge_clearance(points, robot_radius=ROBOT_RADIUS):
+    """Gap between the robot's edge and the closest laser point, or None if there are none.
 
-    Readings outside [range_min, range_max], inf and NaN mean "no return"
-    and are ignored.
+    points are (x, y) obstacle positions already in the robot's frame
+    (base_link), so the robot's centre is (0, 0) and its edge is robot_radius
+    away from it. Moving them there from the laser's own frame (the laser is
+    not at the centre) is done with TF in run_scenario.py.
     """
-    valid = [r for r in ranges if math.isfinite(r) and range_min <= r <= range_max]
-    return min(valid) if valid else None
-
-
-def clearance(min_range, robot_radius=ROBOT_RADIUS):
-    """Distance from the robot's edge to the nearest obstacle, or None without laser data.
-
-    The laser sits at the centre of the round robot, so the gap between the
-    robot's edge and an obstacle is the laser reading minus the radius.
-    """
-    return None if min_range is None else min_range - robot_radius
+    distances = [math.hypot(x, y) for x, y in points]
+    return min(distances) - robot_radius if distances else None
 
 
 def evaluate(scenario, run):
     """Decide whether a scenario passed.
 
-    run is a dict with goals_reached, timed_out and min_range (None if no
-    laser data was seen). Returns (passed, reason).
+    run is a dict with goals_reached, timed_out and clearance (the smallest
+    edge_clearance of the run, None if no laser data was seen). Returns
+    (passed, reason).
 
     A run that should succeed also needs laser data: without it the clearance
     cannot be checked, so a broken /scan must not pass silently. Expected
@@ -98,9 +93,9 @@ def evaluate(scenario, run):
         return False, f"timed out after {run['goals_reached']}/{total} goals"
     if not reached_all:
         return False, f"reached {run['goals_reached']}/{total} goals"
-    gap = clearance(run["min_range"])
+    gap = run["clearance"]
     if gap is None:
-        return False, "no valid laser data on /scan, so the clearance could not be checked"
+        return False, "no laser points in the robot frame (/scan or TF missing), so the clearance could not be checked"
     if gap < scenario["min_clearance"]:
         return False, (f"too close to an obstacle: {gap:.2f} m from the robot's edge "
                        f"(limit {scenario['min_clearance']:.2f} m)")
@@ -120,7 +115,7 @@ def format_table(results):
         lines.append(
             f"| {r['name']} | {'PASS' if r['passed'] else 'FAIL'} "
             f"| {r['goals_reached']}/{r['goals_total']} | {num(r['elapsed'], 1)} "
-            f"| {num(r['path_length'], 2)} | {num(clearance(r['min_range']), 2)} | {r['reason']} |"
+            f"| {num(r['path_length'], 2)} | {num(r['clearance'], 2)} | {r['reason']} |"
         )
     passed = sum(r["passed"] for r in results)
     lines.append("")
