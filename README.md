@@ -38,7 +38,7 @@ ros2 launch /ws/launch/sim.launch.py scenario:=/ws/scenarios/warehouse_shelf.yam
 ```
 
 ## Run the scenario suite
-Each file in [`scenarios/`](scenarios) describes a navigation test: the world (Nav2's TurtleBot3 sandbox by default, or my warehouse), start pose, one or more goals, a time limit, and whether Nav2 should succeed or fail:
+Each file in [`scenarios/`](scenarios) describes a navigation test: the world (Nav2's TurtleBot3 sandbox by default, or my warehouse), start pose, one or more goals, a time limit in simulated seconds (read from Gazebo's `/clock`, so a slow machine or a busy CI runner doesn't make a scenario time out), and whether Nav2 should succeed or fail:
 ```yaml
 description: Drive through the 1.0 m narrow aisle
 world: warehouse
@@ -55,17 +55,17 @@ scripts/run_scenarios.sh short_goal   # just one
 ```
 Every scenario gets a fresh headless simulation in its own container. The image sets `ROS_AUTOMATIC_DISCOVERY_RANGE=LOCALHOST`, so ROS only discovers nodes inside each container, and a scenario can run while I watch another simulation in Lichtblick (before that, the two robots' topics got mixed up). [`run_scenario.py`](scripts/run_scenario.py) drives the robot through the goals while recording `/odom` and `/scan`, then saves `results/<scenario>.json`. A scenario passes if the robot reaches every goal in time without its edge getting closer than 0.05 m to an obstacle. The robot is a 0.22 m circle around `base_link` (the same `robot_radius` Nav2 uses), and the laser is mounted 6.4 cm behind its centre, so each scan is first moved into the robot's frame with TF and `laser_geometry`. If no laser data arrives, the clearance can't be checked and the scenario fails. For `expect: failure`, it passes if Nav2 gives up. The script ends with a summary table; this is a run on my Mac:
 
-| Scenario | Result | Goals | Time (s) | Path (m) | Min clearance (m) | Notes |
+| Scenario | Result | Goals | Sim time (s) | Path (m) | Min clearance (m) | Notes |
 |---|---|---|---|---|---|---|
-| cross_map | PASS | 1/1 | 15.1 | 4.56 | 0.14 | all goals reached |
-| patrol_loop | PASS | 4/4 | 50.0 | 11.62 | 0.08 | all goals reached |
-| short_goal | PASS | 1/1 | 6.0 | 2.28 | 0.14 | all goals reached |
-| unreachable_goal | PASS | 0/1 | 0.0 | 0.00 | 0.31 | failed as expected |
-| warehouse_narrow_aisle | PASS | 3/3 | 27.9 | 11.31 | 0.21 | all goals reached |
-| warehouse_patrol | PASS | 3/3 | 99.8 | 39.84 | 0.48 | all goals reached |
-| warehouse_shelf | PASS | 1/1 | 18.2 | 7.17 | 0.27 | all goals reached |
+| cross_map | PASS | 1/1 | 14.9 | 4.58 | 0.15 | all goals reached |
+| patrol_loop | PASS | 4/4 | 49.3 | 11.54 | 0.09 | all goals reached |
+| short_goal | PASS | 1/1 | 6.1 | 2.31 | 0.15 | all goals reached |
+| unreachable_goal | PASS | 0/1 | 0.0 | 0.00 | 0.32 | failed as expected |
+| warehouse_narrow_aisle | PASS | 3/3 | 27.9 | 11.23 | 0.22 | all goals reached |
+| warehouse_patrol | PASS | 3/3 | 98.3 | 39.74 | 0.46 | all goals reached |
+| warehouse_shelf | PASS | 1/1 | 18.1 | 7.15 | 0.26 | all goals reached |
 
-The narrow aisle taught me something: my first version only had goals at both ends, and the robot passed with its laser never closer than 0.80 m to anything, which is impossible inside a 1.0 m aisle. The planner had gone around the shelves, because the inflated costmap makes the narrow aisle expensive. A goal in the middle of the aisle forces it through, and now the clearance (0.21 m from the robot's edge) proves it.
+The narrow aisle taught me something: my first version only had goals at both ends, and the robot passed with its laser never closer than 0.80 m to anything, which is impossible inside a 1.0 m aisle. The planner had gone around the shelves, because the inflated costmap makes the narrow aisle expensive. A goal in the middle of the aisle forces it through, and now the clearance (0.22 m from the robot's edge) proves it.
 
 The pass/fail logic and the metrics live in [`metrics.py`](scripts/metrics.py), with no ROS imports, so they are unit-tested with pytest in milliseconds, together with the warehouse generator and a check that every warehouse scenario starts and ends in free space on the map:
 ```bash
