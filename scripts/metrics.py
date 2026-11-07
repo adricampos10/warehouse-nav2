@@ -108,7 +108,7 @@ def format_table(results):
         return "-" if value is None else f"{value:.{digits}f}"
 
     lines = [
-        "| Scenario | Result | Goals | Time (s) | Path (m) | Min clearance (m) | Notes |",
+        "| Scenario | Result | Goals | Sim time (s) | Path (m) | Min clearance (m) | Notes |",
         "|---|---|---|---|---|---|---|",
     ]
     for r in sorted(results, key=lambda r: r["name"]):
