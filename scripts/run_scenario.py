@@ -7,7 +7,9 @@ Run inside the container while the Nav2 simulation is up:
 It drives the robot through the scenario's goals, records the time (simulated
 seconds, from Gazebo's /clock, so a slow machine doesn't make it time out), the path
 travelled (/odom) and how close the robot's edge came to an obstacle (/scan,
-moved into the robot's frame with TF), and writes
+moved into the robot's frame with TF). If the scenario has moving obstacles,
+it also records how close the robot came to each one, from Gazebo's exact
+poses, so a real contact fails the scenario. It writes
 <results>/<scenario>.json. Exit code 0 means the scenario passed.
 """
 import json
@@ -18,6 +20,8 @@ from pathlib import Path
 import rclpy
 import tf2_ros
 import yaml
+from gz.msgs10.pose_v_pb2 import Pose_V
+from gz.transport13 import Node as GzNode
 from laser_geometry import LaserProjection
 from nav2_simple_commander.robot_navigator import BasicNavigator, TaskResult
 from nav_msgs.msg import Odometry
@@ -28,8 +32,9 @@ from sensor_msgs.msg import LaserScan
 from sensor_msgs_py import point_cloud2
 from tf2_sensor_msgs import do_transform_cloud
 
-from metrics import edge_clearance, evaluate, path_length, validate_scenario
+from metrics import edge_clearance, evaluate, obstacle_gap, path_length, validate_scenario
 from nav_utils import make_pose
+from obstacles import ROBOT_MODEL, WORLD, model_name
 
 
 ROBOT_FRAME = "base_link"  # the frame the robot's footprint is centred on
@@ -73,6 +78,32 @@ class Recorder:
             self.min_clearance = gap
 
 
+class ObstacleWatcher:
+    """Smallest gap between the robot and the moving obstacles while recording.
+
+    Ground truth: it reads both positions from Gazebo (gz-transport), not from
+    the laser, so it tells a real contact from a close pass.
+    """
+
+    def __init__(self, count):
+        self.recording = False
+        self.min_gap = None
+        self.names = {model_name(i) for i in range(count)}
+        self.node = GzNode()
+        self.node.subscribe(Pose_V, f"/world/{WORLD}/pose/info", self.on_poses)
+
+    def on_poses(self, msg):
+        if not self.recording:
+            return
+        poses = {p.name: (p.position.x, p.position.y) for p in msg.pose}
+        if ROBOT_MODEL not in poses:
+            return
+        for name in self.names & poses.keys():
+            gap = obstacle_gap(poses[ROBOT_MODEL], poses[name])
+            if self.min_gap is None or gap < self.min_gap:
+                self.min_gap = gap
+
+
 def current_sim_time(node):
     """The simulated time, after spinning until the node's clock moves.
 
@@ -100,12 +131,15 @@ def main():
     clock = navigator.get_clock()
     current_sim_time(navigator)
     recorder = Recorder(navigator)  # isTaskComplete() spins the navigator, so these callbacks run
+    watcher = ObstacleWatcher(len(scenario["obstacles"])) if scenario["obstacles"] else None
 
     navigator.setInitialPose(make_pose(navigator, *scenario["start"]))
     print(f"[{name}] Waiting for Nav2 to become active...", flush=True)
     navigator.waitUntilNav2Active()
 
     recorder.recording = True
+    if watcher:
+        watcher.recording = True
     sim_start, wall_start = current_sim_time(navigator), time.monotonic()
 
     def sim_elapsed():
@@ -125,9 +159,13 @@ def main():
         goals_reached += 1
     elapsed, wall_elapsed = sim_elapsed(), time.monotonic() - wall_start
     recorder.recording = False
+    obstacle_gap_min = watcher.min_gap if watcher else None
+    if watcher:
+        watcher.recording = False
 
     passed, reason = evaluate(scenario, {
         "goals_reached": goals_reached, "timed_out": timed_out, "clearance": recorder.min_clearance,
+        "obstacle_gap": obstacle_gap_min,
     })
     result = {
         "name": name,
@@ -141,6 +179,7 @@ def main():
         "wall_elapsed": round(wall_elapsed, 2),  # real seconds on this machine
         "path_length": round(path_length(recorder.positions), 3),
         "clearance": None if recorder.min_clearance is None else round(recorder.min_clearance, 3),
+        "obstacle_gap": None if obstacle_gap_min is None else round(obstacle_gap_min, 3),
     }
     results_dir.mkdir(parents=True, exist_ok=True)
     (results_dir / f"{name}.json").write_text(json.dumps(result, indent=2) + "\n")

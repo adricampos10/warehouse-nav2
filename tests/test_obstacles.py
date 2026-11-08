@@ -6,7 +6,7 @@ import pytest
 
 from metrics import validate_scenario
 from obstacles import (DEFAULT_SPEED, HEIGHT, RADIUS, body_velocity, has_moved, next_target,
-                       obstacle_sdf, validate_obstacles, yaw_from_quaternion)
+                       obstacle_sdf, should_wait, validate_obstacles, yaw_from_quaternion)
 
 PATH = [(0.0, 0.0), (2.0, 0.0), (2.0, 2.0)]
 
@@ -48,6 +48,25 @@ def test_invalid_obstacles_are_rejected(bad, message):
 def test_obstacles_wait_until_the_robot_moves():
     assert not has_moved((-5.5, 0.0), (-5.47, 0.02))  # settling after the spawn
     assert has_moved((-5.5, 0.0), (-5.3, 0.0))
+
+
+# --- should_wait ------------------------------------------------------------------
+# The person is at (0, 0) walking to (5, 0), towards +x.
+
+def test_stops_when_the_robot_is_close_and_in_front():
+    assert should_wait((0, 0), (5, 0), (0.8, 0.1), gap=0.33)
+
+
+def test_keeps_walking_when_the_robot_is_far():
+    assert not should_wait((0, 0), (5, 0), (2.0, 0.0), gap=1.53)
+
+
+def test_keeps_walking_when_the_robot_is_close_but_behind():
+    assert not should_wait((0, 0), (5, 0), (-0.8, 0.0), gap=0.33)
+
+
+def test_keeps_walking_when_the_robot_is_right_beside_it():
+    assert not should_wait((0, 0), (5, 0), (0.0, 0.8), gap=0.33)
 
 
 # --- obstacle_sdf ---------------------------------------------------------------

@@ -55,18 +55,19 @@ scripts/run_scenarios.sh short_goal   # just one
 ```
 Every scenario gets a fresh headless simulation in its own container. The image sets `ROS_AUTOMATIC_DISCOVERY_RANGE=LOCALHOST`, so ROS only discovers nodes inside each container, and a scenario can run while I watch another simulation in Lichtblick (before that, the two robots' topics got mixed up). [`run_scenario.py`](scripts/run_scenario.py) drives the robot through the goals while recording `/odom` and `/scan`, then saves `results/<scenario>.json`. A scenario passes if the robot reaches every goal in time without its edge getting closer than 0.05 m to an obstacle. The robot is a 0.22 m circle around `base_link` (the same `robot_radius` Nav2 uses), and the laser is mounted 6.4 cm behind its centre, so each scan is first moved into the robot's frame with TF and `laser_geometry`. If no laser data arrives, the clearance can't be checked and the scenario fails. For `expect: failure`, it passes if Nav2 gives up. The script ends with a summary table; this is a run on my Mac:
 
-| Scenario | Result | Goals | Sim time (s) | Path (m) | Min clearance (m) | Notes |
-|---|---|---|---|---|---|---|
-| cross_map | PASS | 1/1 | 14.7 | 4.66 | 0.14 | all goals reached |
-| patrol_loop | PASS | 4/4 | 49.3 | 11.55 | 0.09 | all goals reached |
-| short_goal | PASS | 1/1 | 6.0 | 2.29 | 0.15 | all goals reached |
-| unreachable_goal | PASS | 0/1 | 0.0 | 0.00 | 0.31 | failed as expected |
-| warehouse_narrow_aisle | PASS | 3/3 | 28.1 | 11.28 | 0.19 | all goals reached |
-| warehouse_patrol | PASS | 3/3 | 98.9 | 39.65 | 0.52 | all goals reached |
-| warehouse_people | PASS | 1/1 | 39.0 | 15.45 | 0.30 | all goals reached |
-| warehouse_shelf | PASS | 1/1 | 17.9 | 7.16 | 0.25 | all goals reached |
+| Scenario | Result | Goals | Sim time (s) | Path (m) | Min clearance (m) | People gap (m) | Notes |
+|---|---|---|---|---|---|---|---|
+| cross_map | PASS | 1/1 | 14.7 | 4.54 | 0.15 | - | all goals reached |
+| patrol_loop | PASS | 4/4 | 49.9 | 11.62 | 0.12 | - | all goals reached |
+| short_goal | PASS | 1/1 | 6.1 | 2.31 | 0.14 | - | all goals reached |
+| unreachable_goal | PASS | 0/1 | 0.0 | 0.00 | 0.30 | - | failed as expected |
+| warehouse_narrow_aisle | PASS | 3/3 | 27.5 | 11.24 | 0.21 | - | all goals reached |
+| warehouse_patrol | PASS | 3/3 | 98.7 | 39.67 | 0.47 | - | all goals reached |
+| warehouse_people | PASS | 1/1 | 38.4 | 15.24 | 0.47 | 0.49 | all goals reached |
+| warehouse_person_head_on | PASS | 1/1 | 10.8 | 3.67 | 0.28 | 0.30 | all goals reached |
+| warehouse_shelf | PASS | 1/1 | 18.1 | 7.24 | 0.20 | - | all goals reached |
 
-The narrow aisle taught me something: my first version only had goals at both ends, and the robot passed with its laser never closer than 0.80 m to anything, which is impossible inside a 1.0 m aisle. The planner had gone around the shelves, because the inflated costmap makes the narrow aisle expensive. A goal in the middle of the aisle forces it through, and now the clearance (0.19 m from the robot's edge) proves it.
+The narrow aisle taught me something: my first version only had goals at both ends, and the robot passed with its laser never closer than 0.80 m to anything, which is impossible inside a 1.0 m aisle. The planner had gone around the shelves, because the inflated costmap makes the narrow aisle expensive. A goal in the middle of the aisle forces it through, and now the clearance (0.21 m from the robot's edge) proves it.
 
 ### Moving obstacles
 A scenario can also have people walking around. Each one is a person-sized cylinder that walks back and forth along a path, at a given speed:
@@ -75,9 +76,13 @@ obstacles:
   - path: [[-3.5, -2.5], [-3.5, 3.5]]   # across the loading area
     speed: 0.5                           # m/s
 ```
-They are not on the map, so Nav2 only knows about them from the laser, like real people. [`move_obstacles.py`](scripts/move_obstacles.py), which my launch file starts when the scenario has obstacles, talks to Gazebo directly through gz-transport: it creates the cylinders, reads their poses and drives them with Gazebo's `VelocityControl` system (gravity is off for them, so they glide at exactly their speed and never tip over). They wait until the robot starts moving, so they meet it at the same point in every run, however long Nav2 takes to start. The walking logic is in [`obstacles.py`](scripts/obstacles.py), with no ROS or Gazebo imports, so it is unit-tested too.
+They are not on the map, so Nav2 only knows about them from the laser, like real people. [`move_obstacles.py`](scripts/move_obstacles.py), which my launch file starts when the scenario has obstacles, talks to Gazebo directly through gz-transport: it creates the cylinders, reads their poses and drives them with Gazebo's `VelocityControl` system (gravity is off for them, so they glide at exactly their speed and never tip over). They wait until the robot starts moving, so they meet it at the same point in every run, however long Nav2 takes to start, and they stop while the robot is right in front of them (closer than 0.5 m), like real people would. The walking logic is in [`obstacles.py`](scripts/obstacles.py), with no ROS or Gazebo imports, so it is unit-tested too.
 
-In `warehouse_people`, two people cross the robot's way while it drives through the warehouse; that scenario asks for at least 0.20 m of clearance instead of 0.05 m. It only works in my warehouse: Gazebo publishes model poses only when the world loads its scene broadcaster, which Nav2's sandbox does only with the GUI, while my generated world always does.
+In `warehouse_people`, two people cross the robot's way while it drives through the warehouse, and in `warehouse_person_head_on` a person walks straight at it; they ask for at least 0.20 m and 0.15 m of clearance, instead of 0.05 m. With people, the judge also checks for real contact: the script reads the robot's and the people's exact positions from Gazebo (not from the laser), stores the closest gap in the result as `obstacle_gap` (the *People gap* column) and fails the scenario if it goes below zero.
+
+My first people were blind: they kept walking whatever happened, and Gazebo's `VelocityControl` pushes with unlimited force. While I was sending goals by hand in Lichtblick, a person walked into the robot and shoved it; the wheels didn't notice, AMCL corrected the robot's position with a jump, and the map appeared shifted. The head-on scenario reproduced it ("hit a moving obstacle: 0.03 m of overlap") before I made people stop for the robot, and passes since.
+
+Moving obstacles only work in my warehouse: Gazebo publishes model poses only when the world loads its scene broadcaster, which Nav2's sandbox does only with the GUI, while my generated world always does.
 
 The pass/fail logic and the metrics live in [`metrics.py`](scripts/metrics.py), with no ROS imports, so they are unit-tested with pytest in milliseconds, together with the warehouse generator and a check that every warehouse scenario starts and ends in free space on the map, and that its people only walk through free space:
 ```bash
