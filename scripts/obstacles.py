@@ -13,10 +13,14 @@ scripts/move_obstacles.py does the Gazebo part.
 """
 import math
 
+WORLD = "default"              # my warehouse and Nav2's sandbox are both called "default"
+ROBOT_MODEL = "turtlebot3_waffle"  # the robot model Nav2's bringup spawns in Gazebo
+
 RADIUS = 0.25        # a person, as the laser sees them from the side
 HEIGHT = 1.7
 DEFAULT_SPEED = 0.5  # m/s, a slow walk
 TOLERANCE = 0.05     # m, how close counts as having reached a path point
+STOP_DISTANCE = 0.5  # m between the robot's edge and theirs: closer, and they stop
 
 
 def validate_obstacles(data):
@@ -50,6 +54,21 @@ def has_moved(first, current, threshold=0.1):
     of its drive in every run, however long Nav2 takes to start.
     """
     return math.dist(first, current) > threshold
+
+
+def should_wait(position, target, robot_xy, gap, stop_distance=STOP_DISTANCE):
+    """Whether the obstacle stops to let the robot pass, like a real person would.
+
+    It stops when the robot is closer than stop_distance (edge to edge) and
+    in front of it, on the side it is walking towards. If the robot is behind
+    or beside it, it keeps walking, so it never blocks a robot that is
+    already getting out of its way.
+    """
+    if gap >= stop_distance:
+        return False
+    heading = (target[0] - position[0], target[1] - position[1])
+    to_robot = (robot_xy[0] - position[0], robot_xy[1] - position[1])
+    return heading[0] * to_robot[0] + heading[1] * to_robot[1] > 0
 
 
 def obstacle_sdf(name, x, y):

@@ -5,8 +5,8 @@ from pathlib import Path
 import pytest
 import yaml
 
-from metrics import (ROBOT_RADIUS, edge_clearance, evaluate, format_table, path_length,
-                     validate_scenario)
+from metrics import (ROBOT_RADIUS, edge_clearance, evaluate, format_table, obstacle_gap,
+                     path_length, validate_scenario)
 
 SCENARIOS = sorted((Path(__file__).parent.parent / "scenarios").glob("*.yaml"))
 
@@ -129,6 +129,36 @@ def test_expected_failure_that_succeeds_fails():
     assert not evaluate(scenario(expect="failure"), run())[0]
 
 
+# --- moving obstacles: obstacle_gap and contact --------------------------------
+
+PEOPLE = [{"path": [[0, 1], [1, 1]]}]
+
+
+def test_obstacle_gap_is_between_the_two_edges():
+    # 0.22 m robot radius + 0.25 m person radius
+    assert obstacle_gap((0, 0), (1.0, 0)) == pytest.approx(0.53)
+    assert obstacle_gap((0, 0), (0.4, 0)) == pytest.approx(-0.07)  # touching
+
+
+def test_hitting_a_moving_obstacle_fails():
+    s = scenario(world="warehouse", obstacles=PEOPLE)
+    passed, reason = evaluate(s, {**run(), "obstacle_gap": -0.13})
+    assert not passed
+    assert reason == "hit a moving obstacle: 0.13 m of overlap"
+
+
+def test_passing_close_to_a_moving_obstacle_is_fine():
+    s = scenario(world="warehouse", obstacles=PEOPLE)
+    assert evaluate(s, {**run(), "obstacle_gap": 0.02})[0]
+
+
+def test_moving_obstacles_without_gazebo_poses_fail():
+    s = scenario(world="warehouse", obstacles=PEOPLE)
+    passed, reason = evaluate(s, {**run(), "obstacle_gap": None})
+    assert not passed
+    assert "contact could not be checked" in reason
+
+
 # --- format_table -------------------------------------------------------------
 
 def test_format_table():
@@ -136,10 +166,11 @@ def test_format_table():
         {"name": "b", "passed": False, "goals_reached": 0, "goals_total": 1,
          "elapsed": 12.34, "path_length": None, "clearance": None, "reason": "x"},
         {"name": "a", "passed": True, "goals_reached": 1, "goals_total": 1,
-         "elapsed": 20.0, "path_length": 2.5, "clearance": 0.09, "reason": "ok"},
+         "elapsed": 20.0, "path_length": 2.5, "clearance": 0.09, "obstacle_gap": 0.4,
+         "reason": "ok"},
     ]
     table = format_table(results)
     lines = table.splitlines()
-    assert lines[2] == "| a | PASS | 1/1 | 20.0 | 2.50 | 0.09 | ok |"
-    assert lines[3] == "| b | FAIL | 0/1 | 12.3 | - | - | x |"
+    assert lines[2] == "| a | PASS | 1/1 | 20.0 | 2.50 | 0.09 | 0.40 | ok |"
+    assert lines[3] == "| b | FAIL | 0/1 | 12.3 | - | - | - | x |"
     assert table.endswith("1/2 scenarios passed")

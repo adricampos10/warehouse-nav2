@@ -1,0 +1,16 @@
+# A person walks straight at the robot along the same line, in the open
+# loading area. Nav2 has to steer around them; the person stops if the robot
+# is right in front of them, like a real person would.
+description: Pass a person walking straight at the robot
+world: warehouse
+start: [-5.5, 0.0]
+goals:
+  - [-2.6, 0.0]
+timeout: 120
+# Nav2 swerves late here, so the clearance varies (0.20-0.28 m in my runs);
+# 0.15 m keeps a safety margin without flaky failures, and real contact with
+# the person is checked separately from Gazebo's exact positions.
+min_clearance: 0.15
+obstacles:
+  - path: [[-3.0, 0.0], [-6.5, 0.0]]   # from near the goal towards the start
+    speed: 0.5

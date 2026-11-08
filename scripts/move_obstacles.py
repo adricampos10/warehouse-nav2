@@ -7,11 +7,11 @@ launch/sim.launch.py starts it when the scenario has obstacles:
 It talks to Gazebo directly through gz-transport, not through ROS: it creates
 each obstacle with the world's create service, reads where they are from
 /world/<world>/pose/info and sends each one a velocity for its VelocityControl
-system. The obstacles wait until the robot starts moving. It also prints the
+system. The obstacles wait until the robot starts moving, and stop while the
+robot is right in front of them. It also prints the
 closest the robot's edge has come to each obstacle, from Gazebo's exact poses.
 The decisions (when and where to walk, how fast) are in obstacles.py.
 """
-import math
 import sys
 import time
 from pathlib import Path
@@ -23,12 +23,9 @@ from gz.msgs10.pose_v_pb2 import Pose_V
 from gz.msgs10.twist_pb2 import Twist
 from gz.transport13 import Node
 
-from metrics import ROBOT_RADIUS, validate_scenario
-from obstacles import (RADIUS, body_velocity, has_moved, model_name, next_target, obstacle_sdf,
-                       yaw_from_quaternion)
-
-WORLD = "default"  # my warehouse and Nav2's sandbox world are both called "default"
-ROBOT = "turtlebot3_waffle"  # the robot model Nav2's bringup spawns
+from metrics import obstacle_gap, validate_scenario
+from obstacles import (ROBOT_MODEL, WORLD, body_velocity, has_moved, model_name, next_target,
+                       obstacle_sdf, should_wait, yaw_from_quaternion)
 
 
 def spawn(node, name, x, y):
@@ -61,9 +58,9 @@ def main():
 
     def on_poses(msg):
         poses = {p.name: p for p in msg.pose}
-        if ROBOT not in poses:
+        if ROBOT_MODEL not in poses:
             return  # the robot hasn't been spawned yet
-        robot_xy = (poses[ROBOT].position.x, poses[ROBOT].position.y)
+        robot_xy = (poses[ROBOT_MODEL].position.x, poses[ROBOT_MODEL].position.y)
         robot["first"] = robot["first"] or robot_xy
         if not robot["moving"] and has_moved(robot["first"], robot_xy):
             robot["moving"] = True
@@ -74,13 +71,13 @@ def main():
             pose = poses[name]
             path, speed = obstacles[i]["path"], obstacles[i]["speed"]
             position = (pose.position.x, pose.position.y)
-            gap = math.dist(robot_xy, position) - ROBOT_RADIUS - RADIUS
+            gap = obstacle_gap(robot_xy, position)
             if closest[i] is None or gap < closest[i] - 0.05:
                 closest[i] = gap
                 print(f"Closest the robot's edge has come to {name}: {gap:.2f} m", flush=True)
-            if not robot["moving"]:
-                speed = 0.0
             targets[i] = next_target(path, *targets[i], position)
+            if not robot["moving"] or should_wait(position, path[targets[i][0]], robot_xy, gap):
+                speed = 0.0
             q = pose.orientation
             vx, vy = body_velocity(position, yaw_from_quaternion(q.x, q.y, q.z, q.w),
                                    path[targets[i][0]], speed)

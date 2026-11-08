@@ -6,6 +6,7 @@ pass/fail results and a summary table.
 """
 import math
 
+from obstacles import RADIUS as OBSTACLE_RADIUS
 from obstacles import validate_obstacles
 from worlds import DEFAULT_WORLD, POSE_WORLDS, WORLDS
 
@@ -76,12 +77,21 @@ def edge_clearance(points, robot_radius=ROBOT_RADIUS):
     return min(distances) - robot_radius if distances else None
 
 
+def obstacle_gap(robot_xy, obstacle_xy, robot_radius=ROBOT_RADIUS):
+    """Gap between the robot's edge and a moving obstacle's edge; negative means they touch.
+
+    It uses Gazebo's exact positions of both (ground truth), not the laser.
+    """
+    return math.dist(robot_xy, obstacle_xy) - robot_radius - OBSTACLE_RADIUS
+
+
 def evaluate(scenario, run):
     """Decide whether a scenario passed.
 
-    run is a dict with goals_reached, timed_out and clearance (the smallest
-    edge_clearance of the run, None if no laser data was seen). Returns
-    (passed, reason).
+    run is a dict with goals_reached, timed_out, clearance (the smallest
+    edge_clearance of the run, None if no laser data was seen) and, for
+    scenarios with moving obstacles, obstacle_gap (the smallest obstacle_gap
+    of the run, None if Gazebo sent no poses). Returns (passed, reason).
 
     A run that should succeed also needs laser data: without it the clearance
     cannot be checked, so a broken /scan must not pass silently. Expected
@@ -95,6 +105,12 @@ def evaluate(scenario, run):
             return False, "expected Nav2 to fail, but it reached the goal"
         return True, "failed as expected"
 
+    if scenario["obstacles"]:
+        contact = run.get("obstacle_gap")
+        if contact is None:
+            return False, "no poses of the moving obstacles from Gazebo, so contact could not be checked"
+        if contact < 0:
+            return False, f"hit a moving obstacle: {-contact:.2f} m of overlap"
     if run["timed_out"]:
         return False, f"timed out after {run['goals_reached']}/{total} goals"
     if not reached_all:
@@ -114,14 +130,15 @@ def format_table(results):
         return "-" if value is None else f"{value:.{digits}f}"
 
     lines = [
-        "| Scenario | Result | Goals | Sim time (s) | Path (m) | Min clearance (m) | Notes |",
-        "|---|---|---|---|---|---|---|",
+        "| Scenario | Result | Goals | Sim time (s) | Path (m) | Min clearance (m) | People gap (m) | Notes |",
+        "|---|---|---|---|---|---|---|---|",
     ]
     for r in sorted(results, key=lambda r: r["name"]):
         lines.append(
             f"| {r['name']} | {'PASS' if r['passed'] else 'FAIL'} "
             f"| {r['goals_reached']}/{r['goals_total']} | {num(r['elapsed'], 1)} "
-            f"| {num(r['path_length'], 2)} | {num(r['clearance'], 2)} | {r['reason']} |"
+            f"| {num(r['path_length'], 2)} | {num(r['clearance'], 2)} "
+            f"| {num(r.get('obstacle_gap'), 2)} | {r['reason']} |"
         )
     passed = sum(r["passed"] for r in results)
     lines.append("")
