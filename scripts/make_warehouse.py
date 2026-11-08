@@ -145,8 +145,10 @@ def sdf_box(box):
 def world_sdf(layout):
     """Gazebo world, a xacro file like the TurtleBot3 sandbox that Nav2 ships.
 
-    tb3_simulation_launch.py runs xacro on it with headless:=True/False, so
-    the scene broadcaster (needed only by the Gazebo GUI) is optional.
+    tb3_simulation_launch.py runs xacro on it with headless:=True/False. Unlike
+    Nav2's sandbox, the scene broadcaster is always on, even headless: besides
+    the Gazebo GUI, it publishes /world/default/pose/info, which
+    move_obstacles.py needs to walk the moving obstacles.
     """
     models = "".join(sdf_box(b) for b in layout)
     return f"""<?xml version="1.0"?>
@@ -157,9 +159,7 @@ def world_sdf(layout):
   <world name="default">
     <plugin filename="gz-sim-physics-system" name="gz::sim::systems::Physics"/>
     <plugin filename="gz-sim-user-commands-system" name="gz::sim::systems::UserCommands"/>
-    <xacro:unless value="$(arg headless)">
-      <plugin filename="gz-sim-scene-broadcaster-system" name="gz::sim::systems::SceneBroadcaster"/>
-    </xacro:unless>
+    <plugin filename="gz-sim-scene-broadcaster-system" name="gz::sim::systems::SceneBroadcaster"/>
     <plugin filename="gz-sim-sensors-system" name="gz::sim::systems::Sensors">
       <render_engine>ogre2</render_engine>
     </plugin>

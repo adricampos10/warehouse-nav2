@@ -58,6 +58,13 @@ def test_world_has_one_model_per_box():
         assert f'<model name="{b.name}">' in sdf
 
 
+def test_world_publishes_poses_even_headless():
+    # move_obstacles.py reads /world/default/pose/info from the scene broadcaster
+    sdf = wh.world_sdf(wh.boxes())
+    assert "gz::sim::systems::SceneBroadcaster" in sdf
+    assert "xacro:unless" not in sdf
+
+
 def test_generated_files_are_up_to_date():
     # If this fails, run: python3 scripts/make_warehouse.py
     layout = wh.boxes()

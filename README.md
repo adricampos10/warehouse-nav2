@@ -57,17 +57,29 @@ Every scenario gets a fresh headless simulation in its own container. The image 
 
 | Scenario | Result | Goals | Sim time (s) | Path (m) | Min clearance (m) | Notes |
 |---|---|---|---|---|---|---|
-| cross_map | PASS | 1/1 | 14.9 | 4.58 | 0.15 | all goals reached |
-| patrol_loop | PASS | 4/4 | 49.3 | 11.54 | 0.09 | all goals reached |
-| short_goal | PASS | 1/1 | 6.1 | 2.31 | 0.15 | all goals reached |
-| unreachable_goal | PASS | 0/1 | 0.0 | 0.00 | 0.32 | failed as expected |
-| warehouse_narrow_aisle | PASS | 3/3 | 27.9 | 11.23 | 0.22 | all goals reached |
-| warehouse_patrol | PASS | 3/3 | 98.3 | 39.74 | 0.46 | all goals reached |
-| warehouse_shelf | PASS | 1/1 | 18.1 | 7.15 | 0.26 | all goals reached |
+| cross_map | PASS | 1/1 | 14.7 | 4.66 | 0.14 | all goals reached |
+| patrol_loop | PASS | 4/4 | 49.3 | 11.55 | 0.09 | all goals reached |
+| short_goal | PASS | 1/1 | 6.0 | 2.29 | 0.15 | all goals reached |
+| unreachable_goal | PASS | 0/1 | 0.0 | 0.00 | 0.31 | failed as expected |
+| warehouse_narrow_aisle | PASS | 3/3 | 28.1 | 11.28 | 0.19 | all goals reached |
+| warehouse_patrol | PASS | 3/3 | 98.9 | 39.65 | 0.52 | all goals reached |
+| warehouse_people | PASS | 1/1 | 39.0 | 15.45 | 0.30 | all goals reached |
+| warehouse_shelf | PASS | 1/1 | 17.9 | 7.16 | 0.25 | all goals reached |
 
-The narrow aisle taught me something: my first version only had goals at both ends, and the robot passed with its laser never closer than 0.80 m to anything, which is impossible inside a 1.0 m aisle. The planner had gone around the shelves, because the inflated costmap makes the narrow aisle expensive. A goal in the middle of the aisle forces it through, and now the clearance (0.22 m from the robot's edge) proves it.
+The narrow aisle taught me something: my first version only had goals at both ends, and the robot passed with its laser never closer than 0.80 m to anything, which is impossible inside a 1.0 m aisle. The planner had gone around the shelves, because the inflated costmap makes the narrow aisle expensive. A goal in the middle of the aisle forces it through, and now the clearance (0.19 m from the robot's edge) proves it.
 
-The pass/fail logic and the metrics live in [`metrics.py`](scripts/metrics.py), with no ROS imports, so they are unit-tested with pytest in milliseconds, together with the warehouse generator and a check that every warehouse scenario starts and ends in free space on the map:
+### Moving obstacles
+A scenario can also have people walking around. Each one is a person-sized cylinder that walks back and forth along a path, at a given speed:
+```yaml
+obstacles:
+  - path: [[-3.5, -2.5], [-3.5, 3.5]]   # across the loading area
+    speed: 0.5                           # m/s
+```
+They are not on the map, so Nav2 only knows about them from the laser, like real people. [`move_obstacles.py`](scripts/move_obstacles.py), which my launch file starts when the scenario has obstacles, talks to Gazebo directly through gz-transport: it creates the cylinders, reads their poses and drives them with Gazebo's `VelocityControl` system (gravity is off for them, so they glide at exactly their speed and never tip over). They wait until the robot starts moving, so they meet it at the same point in every run, however long Nav2 takes to start. The walking logic is in [`obstacles.py`](scripts/obstacles.py), with no ROS or Gazebo imports, so it is unit-tested too.
+
+In `warehouse_people`, two people cross the robot's way while it drives through the warehouse; that scenario asks for at least 0.20 m of clearance instead of 0.05 m. It only works in my warehouse: Gazebo publishes model poses only when the world loads its scene broadcaster, which Nav2's sandbox does only with the GUI, while my generated world always does.
+
+The pass/fail logic and the metrics live in [`metrics.py`](scripts/metrics.py), with no ROS imports, so they are unit-tested with pytest in milliseconds, together with the warehouse generator and a check that every warehouse scenario starts and ends in free space on the map, and that its people only walk through free space:
 ```bash
 docker run --rm -v "$PWD":/ws -w /ws warehouse-nav2:jazzy pytest -v
 ```
