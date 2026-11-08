@@ -1,0 +1,16 @@
+# Two people walk back and forth across the robot's way while it crosses the
+# warehouse through the aisle between shelves B and C. They are not on the
+# map, so Nav2 only knows about them from the laser. They start walking when
+# the robot does, so they meet it at the same point in every run.
+description: Cross the warehouse while two people walk across its way
+world: warehouse
+start: [-5.5, 0.0]
+goals:
+  - [6.0, 0.6]
+timeout: 180
+min_clearance: 0.20   # with people around, keep at least 20 cm from anything
+obstacles:
+  - path: [[-3.5, -2.5], [-3.5, 3.5]]   # across the loading area
+    speed: 0.5
+  - path: [[5.0, 3.5], [5.0, -3.5]]     # across the far end of the aisles
+    speed: 0.5

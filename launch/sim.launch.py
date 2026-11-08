@@ -6,8 +6,9 @@ Run inside the container:
 
 world_name picks the Gazebo world and the map (see scripts/worlds.py) and
 spawns the robot at that world's default start; scenario takes the world and
-the start from a scenario file instead. viz:=true also starts foxglove_bridge
-on port 8765, so I can watch it in Lichtblick.
+the start from a scenario file instead, and also starts the scenario's moving
+obstacles, if it has any (scripts/move_obstacles.py). viz:=true also starts
+foxglove_bridge on port 8765, so I can watch it in Lichtblick.
 
 Launch arguments are shared with the included launch files, so mine must not
 reuse their names: Nav2's bringup already has "world" (the path to the SDF).
@@ -18,7 +19,8 @@ from pathlib import Path
 import yaml
 from ament_index_python.packages import get_package_share_directory
 from launch import LaunchDescription
-from launch.actions import DeclareLaunchArgument, IncludeLaunchDescription, OpaqueFunction
+from launch.actions import (DeclareLaunchArgument, ExecuteProcess, IncludeLaunchDescription,
+                            OpaqueFunction)
 from launch.conditions import IfCondition
 from launch.launch_description_sources import (AnyLaunchDescriptionSource,
                                                PythonLaunchDescriptionSource)
@@ -33,9 +35,14 @@ from worlds import DEFAULT_WORLD, default_start, launch_args  # noqa: E402
 def nav2_simulation(context):
     """Include Nav2's bringup with the world, map and spawn position resolved."""
     scenario_file = LaunchConfiguration("scenario").perform(context)
+    actions = []
     if scenario_file:
         scenario = validate_scenario(yaml.safe_load(Path(scenario_file).read_text()))
         world, start = scenario["world"], scenario["start"]
+        if scenario["obstacles"]:
+            actions.append(ExecuteProcess(
+                cmd=["python3", str(ROOT / "scripts" / "move_obstacles.py"), scenario_file],
+                output="screen"))
     else:
         world = LaunchConfiguration("world_name").perform(context)
         start = default_start(world)
@@ -43,7 +50,7 @@ def nav2_simulation(context):
     bringup = Path(get_package_share_directory("nav2_bringup")) / "launch" / "tb3_simulation_launch.py"
     arguments = {"headless": "True", "use_rviz": "False", **launch_args(world, start, ROOT)}
     return [IncludeLaunchDescription(PythonLaunchDescriptionSource(str(bringup)),
-                                     launch_arguments=arguments.items())]
+                                     launch_arguments=arguments.items()), *actions]
 
 
 def generate_launch_description():

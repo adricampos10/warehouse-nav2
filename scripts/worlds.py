@@ -14,6 +14,11 @@ WORLDS = {
     "warehouse": ("worlds/warehouse.sdf.xacro", "maps/warehouse.yaml", (-5.5, 0.0)),
 }
 
+# Worlds that publish model poses even headless (their SDF always loads the
+# scene broadcaster). Moving obstacles need them; Nav2's sandbox only loads it
+# with the Gazebo GUI, so it can't have moving obstacles.
+POSE_WORLDS = {"warehouse"}
+
 
 def default_start(world):
     return WORLDS[world][2]

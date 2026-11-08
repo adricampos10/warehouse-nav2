@@ -6,7 +6,8 @@ pass/fail results and a summary table.
 """
 import math
 
-from worlds import DEFAULT_WORLD, WORLDS
+from obstacles import validate_obstacles
+from worlds import DEFAULT_WORLD, POSE_WORLDS, WORLDS
 
 # The TurtleBot3 Waffle (about 0.28 x 0.31 m) is modelled as a circle around
 # base_link that covers its body: the same robot_radius that Nav2's costmaps
@@ -42,6 +43,10 @@ def validate_scenario(data):
     if world not in WORLDS:
         raise ValueError(f"world must be one of {tuple(WORLDS)}, got {world!r}")
 
+    obstacles = validate_obstacles(data.get("obstacles", []))
+    if obstacles and world not in POSE_WORLDS:
+        raise ValueError(f"moving obstacles need one of the worlds {sorted(POSE_WORLDS)}, got {world!r}")
+
     return {
         "description": data.get("description", ""),
         "world": world,
@@ -50,6 +55,7 @@ def validate_scenario(data):
         "timeout": float(data["timeout"]),
         "min_clearance": float(data.get("min_clearance", DEFAULT_MIN_CLEARANCE)),
         "expect": expect,
+        "obstacles": obstacles,
     }
 
 
