@@ -105,10 +105,11 @@ scripts/run_scenarios.sh short_goal
 Docker on my Mac cannot open Gazebo's window, so I watch the simulation in [Lichtblick](https://github.com/lichtblick-suite/lichtblick) (the open-source Foxglove) through `foxglove_bridge`:
 ```bash
 scripts/run_sim_viz.sh warehouse   # terminal 1: simulation + foxglove_bridge on ws://localhost:8765
-                                   # (without an argument: Nav2's TurtleBot3 sandbox)
+                                   # (without an argument: Nav2's TurtleBot3 sandbox;
+                                   #  with a scenario name, e.g. warehouse_people: its people too)
 scripts/run_viewer.sh    # terminal 2: Lichtblick on http://localhost:8080
 ```
-Then open <http://localhost:8080/?ds=foxglove-websocket&ds.url=ws://localhost:8765>. The layout in [`viz/lichtblick_layout.json`](viz/lichtblick_layout.json) shows the map, global costmap, laser scan, planned path and robot model. `run_sim_viz.sh` sets the initial pose automatically, so goals can be sent straight away with the 3D panel's *Publish pose* tool (it publishes on `/goal_pose`). To watch it drive around on its own, I run a scenario of the same world in that container:
+Then open <http://localhost:8080/?ds=foxglove-websocket&ds.url=ws://localhost:8765>. The layout in [`viz/lichtblick_layout.json`](viz/lichtblick_layout.json) shows the map, global costmap, laser scan, planned path and robot model. `run_sim_viz.sh` sets the initial pose automatically, so goals can be sent straight away with the 3D panel's *Publish pose* tool (it publishes on `/goal_pose`). With a scenario such as `warehouse_people`, its people show up as moving circles in the laser scan and the costmap, and start walking when the robot does. To watch it drive around on its own, I run a scenario of the same world in that container:
 ```bash
 docker exec nav2viz bash -c "source /opt/ros/jazzy/setup.bash && cd /ws/scripts && python3 run_scenario.py /ws/scenarios/warehouse_patrol.yaml /tmp/results"
 ```
