@@ -9,10 +9,11 @@ depth images, so it needs no RTAB-Map install. Run it in the container
 
     docker run --rm -v "$PWD":/ws warehouse-nav2:jazzy \\
         python3 /ws/scripts/scan_to_map.py /ws/house1.db /ws/maps/house \\
-        --fill=0.68,5.63 --fill=-0.08,5.88 --fill=1.58,5.58
+        --fill=0.68,5.63 --clear=-4.1,3.925,0.35
 
-(that is how I made maps/house; write --fill=X,Y with "=", or argparse takes
-a negative X for an option)
+scripts/make_house_map.sh has the exact command I made maps/house with.
+Write --fill=X,Y and --clear=X,Y,R with "=", or argparse takes a negative X
+for an option.
 
 Steps:
   1. Every depth image becomes 3D points in the scan's frame (camera pose x
@@ -29,6 +30,9 @@ Steps:
      part of a room I didn't scan.
   6. Walls lose one layer of cells on the free side (the scan makes them
      fatter than they are), but never get thinner than two cells.
+  7. --clear=x,y,r removes scan noise I marked by hand: every occupied cell
+     inside the circle (centre and radius in metres) becomes free, and so do
+     unknown specks that lie entirely inside it.
 
 The database holds photos of the place, so it stays out of git; only the map
 (the occupancy grid, no images) goes in the repo.
@@ -122,7 +126,7 @@ def rotation(yaw):
     return np.array([[c, s], [-s, c]])
 
 
-def build_map(frames, fill=()):
+def build_map(frames, fill=(), clear=()):
     """Occupancy grid (rows from the top, like the image) and its origin in metres."""
     floor = floor_height(np.concatenate([p[:, 2] for _, p in frames]),
                          np.median([c[2] for c, _ in frames]))
@@ -173,6 +177,17 @@ def build_map(frames, fill=()):
     peeled = thin_walls(occupied, free)
     occupied &= ~peeled
     free |= peeled
+    if clear:
+        ii, jj = np.indices(occupied.shape)
+        x, y = origin[0] + (ii + 0.5) * RESOLUTION, origin[1] + (jj + 0.5) * RESOLUTION
+        circles = np.any([np.hypot(x - cx, y - cy) <= r for cx, cy, r in clear], axis=0)
+        noise = occupied & circles
+        occupied &= ~noise
+        free |= noise
+        # unknown specks that were hidden under the noise, if entirely inside a circle
+        _, labels = cv2.connectedComponents((~free & ~occupied).astype(np.uint8), connectivity=4)
+        hidden = set(np.unique(labels[circles])) - set(np.unique(labels[~circles])) - {0}
+        free |= np.isin(labels, list(hidden))
 
     grid = np.full((width, height), UNKNOWN, np.uint8)
     grid[free] = FREE
@@ -226,6 +241,11 @@ def map_yaml(image_name, origin, resolution=RESOLUTION):
             "occupied_thresh: 0.65\nfree_thresh: 0.196\n")
 
 
+def parse_circle(text):
+    x, y, r = (float(v) for v in text.split(","))
+    return x, y, r
+
+
 def parse_point(text):
     x, y = (float(v) for v in text.split(","))
     return x, y
@@ -235,11 +255,13 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__.split("\n")[0])
     parser.add_argument("database", help="RTAB-Map database saved by the iOS app")
     parser.add_argument("output", help="map path without extension, e.g. maps/house")
+    parser.add_argument("--clear", type=parse_circle, action="append", default=[], metavar="X,Y,R",
+                        help="make every occupied cell inside this circle (m) free: scan noise")
     parser.add_argument("--fill", type=parse_point, action="append", default=[], metavar="X,Y",
                         help="turn the enclosed unknown area around this point (m) into free space")
     args = parser.parse_args()
 
-    grid, origin = build_map(read_frames(args.database), args.fill)
+    grid, origin = build_map(read_frames(args.database), args.fill, args.clear)
     name = args.output.rsplit("/", 1)[-1]
     cv2.imwrite(f"{args.output}.pgm", grid)
     with open(f"{args.output}.yaml", "w") as f:
