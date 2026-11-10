@@ -64,3 +64,11 @@ def test_warehouse_obstacles_walk_in_free_space(scenario):
         for x, y in along(obstacle["path"]):
             for dx, dy in [(0, 0), *rim]:
                 assert wh.cell_value(grid, x + dx, y + dy) == wh.FREE, f"({x:.2f}, {y:.2f}) hits the map"
+
+
+def test_house_uses_amcl_beam_model():
+    # its scanned walls are thick, which makes the likelihood-field model drift
+    from worlds import PARAM_REWRITES, POSE_WORLDS
+    assert PARAM_REWRITES["house"] == {"laser_model_type": "beam"}
+    assert "house" in POSE_WORLDS
+    assert launch_args("house", (0.0, 0.0), "/ws")["map"] == "/ws/maps/house.yaml"

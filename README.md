@@ -46,17 +46,31 @@ I scanned my home (about 11 × 10 m) with the RTAB-Map iOS app on my iPhone 16 P
 - it finds the floor, and marks points 0.10–1.5 m above it as obstacles;
 - it turns the map so the walls line up with the axes, with (0, 0) where I started;
 - a cell is occupied if it has enough obstacle points and the camera didn't see through it; free space is where the floor was seen or the camera saw through, connected to the path I walked (so what was seen through windows and mirrors is dropped);
-- `--fill x,y` turns an enclosed unknown area into free space, for a part of a room I didn't scan.
+- `--fill x,y` turns an enclosed unknown area into free space, for a part of a room I didn't scan;
+- walls lose one layer of cells on the free side, because the scan makes them fatter than they are (never thinner than two cells, so no hole opens).
 
 ```bash
 docker run --rm -v "$PWD":/ws warehouse-nav2:jazzy \
     python3 /ws/scripts/scan_to_map.py /ws/house1.db /ws/maps/house \
     --fill=0.68,5.63 --fill=-0.08,5.88 --fill=1.58,5.58
 ```
-The scan itself stays out of the repo, because it holds photos of my home; the map has no images. Next: a Gazebo world built from this map, so the robot can drive through my home in the simulation.
+The scan itself stays out of the repo, because it holds photos of my home; the map has no images.
+
+### Driving through it in Gazebo
+The scan has no list of walls like my warehouse, so [`map_to_world.py`](scripts/map_to_world.py) builds the Gazebo world from the map itself: it covers the occupied cells with as few boxes as it can (about 1,000) and makes them 1 m high, so the robot's laser sees in Gazebo exactly what Nav2 has in its map. A unit test fails if the world is out of date with the map:
+```bash
+python3 scripts/map_to_world.py maps/house.yaml worlds/house.sdf.xacro
+```
+`house` is a third world in [`worlds.py`](scripts/worlds.py), with three scenarios: to the living room, a tour of the home and back, and through a narrow doorway into the room on the left.
+
+Two things broke on the way, both worth knowing:
+- **Gazebo sometimes didn't start.** Nav2's launch file runs xacro (which writes the world to a temporary file) and Gazebo at the same time. With 1,000 boxes inline, xacro was sometimes still writing when Gazebo opened the file. The walls now live in their own SDF file ([`worlds/house_walls.sdf`](worlds/house_walls.sdf)) that the world includes, so the world is as small as my warehouse.
+- **AMCL got lost in narrow spots.** The robot drove off course and got stuck, although its wheel odometry was within 5 cm of Gazebo's true pose. AMCL's estimate had slid up to 3 m into the walls. Its default laser model (likelihood field) only checks how far each laser point is from the nearest occupied cell, and my scanned walls are 25–50 cm thick: a point that lands inside a thick wall scores as well as one on its surface, so moving into a wall costs nothing. I found it by comparing AMCL with Gazebo's true pose while the robot spun in place (30 cm off in 15 s at the entrance, 5 cm in the open living room and in my warehouse). The beam model follows each ray to the first wall, so for this world [`sim.launch.py`](launch/sim.launch.py) starts Nav2 with `laser_model_type: beam` (`PARAM_REWRITES` in `worlds.py`); AMCL then stays within 10 cm.
+
+My home's passages are 60–80 cm wide and the robot is 44 cm, so the house scenarios allow 2 cm between the robot and the walls (`min_clearance: 0.02`) instead of 5 cm.
 
 ## Run the scenario suite
-Each file in [`scenarios/`](scenarios) describes a navigation test: the world (Nav2's TurtleBot3 sandbox by default, or my warehouse), start pose, one or more goals, a time limit in simulated seconds (read from Gazebo's `/clock`, so a slow machine or a busy CI runner doesn't make a scenario time out), and whether Nav2 should succeed or fail:
+Each file in [`scenarios/`](scenarios) describes a navigation test: the world (Nav2's TurtleBot3 sandbox by default, my warehouse or my home), start pose, one or more goals, a time limit in simulated seconds (read from Gazebo's `/clock`, so a slow machine or a busy CI runner doesn't make a scenario time out), and whether Nav2 should succeed or fail:
 ```yaml
 description: Drive through the 1.0 m narrow aisle
 world: warehouse
@@ -76,6 +90,9 @@ Every scenario gets a fresh headless simulation in its own container. The image 
 | Scenario | Result | Goals | Sim time (s) | Path (m) | Min clearance (m) | People gap (m) | Notes |
 |---|---|---|---|---|---|---|---|
 | cross_map | PASS | 1/1 | 14.7 | 4.54 | 0.15 | - | all goals reached |
+| house_living_room | PASS | 1/1 | 21.1 | 6.78 | 0.05 | - | all goals reached |
+| house_narrow_door | PASS | 1/1 | 45.5 | 7.22 | 0.01 | - | all goals reached |
+| house_tour | PASS | 4/4 | 92.3 | 25.36 | 0.03 | - | all goals reached |
 | patrol_loop | PASS | 4/4 | 49.9 | 11.62 | 0.12 | - | all goals reached |
 | short_goal | PASS | 1/1 | 6.1 | 2.31 | 0.14 | - | all goals reached |
 | unreachable_goal | PASS | 0/1 | 0.0 | 0.00 | 0.30 | - | failed as expected |
