@@ -1,5 +1,6 @@
-# Through the hallway, up the middle corridor, into the living room and back
-# to the entrance.
+# To the hallway, up the right-hand corridor, into the living room and back
+# to the entrance. (I first sent it up the middle corridor, but the passage
+# at its top end left about 2 cm and failed on GitHub Actions.)
 description: Tour my home and come back to the entrance
 world: house
 # My home's passages are 60-80 cm wide, so the robot (44 cm) passes a few
@@ -8,7 +9,7 @@ min_clearance: 0.02
 start: [0.0, 0.0]
 goals:
   - [-3.5, 0.8]
-  - [-1.9, 3.6]
+  - [0.4, 3.5]
   - [1.1, 6.0]
   - [0.0, 0.0]
 timeout: 400

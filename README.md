@@ -91,7 +91,7 @@ Every scenario gets a fresh headless simulation in its own container. The image 
 |---|---|---|---|---|---|---|---|
 | cross_map | PASS | 1/1 | 14.7 | 4.54 | 0.15 | - | all goals reached |
 | house_living_room | PASS | 1/1 | 21.1 | 6.78 | 0.05 | - | all goals reached |
-| house_tour | PASS | 4/4 | 92.3 | 25.36 | 0.03 | - | all goals reached |
+| house_tour | PASS | 4/4 | 74.5 | 20.64 | 0.06 | - | all goals reached |
 | patrol_loop | PASS | 4/4 | 49.9 | 11.62 | 0.12 | - | all goals reached |
 | short_goal | PASS | 1/1 | 6.1 | 2.31 | 0.14 | - | all goals reached |
 | unreachable_goal | PASS | 0/1 | 0.0 | 0.00 | 0.30 | - | failed as expected |
