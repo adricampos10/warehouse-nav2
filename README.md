@@ -38,9 +38,17 @@ ros2 launch /ws/launch/sim.launch.py scenario:=/ws/scenarios/warehouse_shelf.yam
 ```
 
 ## My home, scanned with my iPhone
+From a walk through my home with my iPhone to a robot driving through it in simulation, in three steps.
+
+**1. The scan.** The 3D point cloud the iPhone's LiDAR recorded, coloured with its camera images and placed with the poses RTAB-Map optimized; the red line is the path I walked.
+
+![3D point cloud of my home from the iPhone scan, coloured by the camera images, with my walking path in red](docs/images/house_scan_3d.jpg)
+
+**2. The map.** The 2D occupancy grid Nav2 uses, made from that scan: white is free, black is walls and furniture, grey is unknown.
+
 ![Nav2 map of my home made from an iPhone LiDAR scan: white is free, black is walls and furniture, grey is unknown](docs/images/house_map.png)
 
-The same map as the robot uses it, in Lichtblick: Nav2's costmap paints the inflation around every wall, the black dots are the laser hits, and the green line is the path Nav2 planned to the living room.
+**3. The robot's view.** The same map as the robot uses it, in Lichtblick: Nav2's costmap paints the inflation around every wall, the black dots are the laser hits, and the green line is the path Nav2 planned to the living room.
 
 ![My home in Lichtblick: the costmap built from the scanned map, the laser scan and the robot following its planned path](docs/images/house_lichtblick.png)
 
