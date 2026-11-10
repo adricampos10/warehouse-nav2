@@ -40,6 +40,10 @@ ros2 launch /ws/launch/sim.launch.py scenario:=/ws/scenarios/warehouse_shelf.yam
 ## My home, scanned with my iPhone
 ![Nav2 map of my home made from an iPhone LiDAR scan: white is free, black is walls and furniture, grey is unknown](docs/images/house_map.png)
 
+The same map as the robot uses it, in Lichtblick: Nav2's costmap paints the inflation around every wall, the black dots are the laser hits, and the green line is the path Nav2 planned to the living room.
+
+![My home in Lichtblick: the costmap built from the scanned map, the laser scan and the robot following its planned path](docs/images/house_lichtblick.png)
+
 I scanned my home (about 11 × 10 m) with the RTAB-Map iOS app on my iPhone 16 Pro Max, which uses its LiDAR and ARKit, and saved the scan with "Optimize" so the poses are corrected by its loop closures. [`scan_to_map.py`](scripts/scan_to_map.py) turns that database into a Nav2 map ([`maps/house.pgm`](maps/house.pgm) + `.yaml`) without installing RTAB-Map:
 
 - it back-projects every LiDAR depth image into 3D points with the frame's optimized pose;
