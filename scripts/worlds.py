@@ -12,12 +12,25 @@ DEFAULT_WORLD = "tb3_sandbox"
 WORLDS = {
     "tb3_sandbox": (None, None, (-2.0, -0.5)),
     "warehouse": ("worlds/warehouse.sdf.xacro", "maps/warehouse.yaml", (-5.5, 0.0)),
+    # my home, from an iPhone scan; (0, 0) is where I started scanning
+    "house": ("worlds/house.sdf.xacro", "maps/house.yaml", (0.0, 0.0)),
 }
 
 # Worlds that publish model poses even headless (their SDF always loads the
 # scene broadcaster). Moving obstacles need them; Nav2's sandbox only loads it
 # with the Gazebo GUI, so it can't have moving obstacles.
-POSE_WORLDS = {"warehouse"}
+POSE_WORLDS = {"warehouse", "house"}
+
+# Nav2 parameters I change for a world, on top of Nav2's defaults (applied with
+# nav2_common's RewrittenYaml: every node that has the key gets the value).
+PARAM_REWRITES = {
+    # My home's walls come from a scan, so they are 25-50 cm thick. AMCL's
+    # default laser model (likelihood field) only looks at how far each laser
+    # point is from the nearest wall, so a point that lands inside a thick wall
+    # looks perfect: the estimate slid into the walls, up to 3 m off in narrow
+    # spots. The beam model follows each ray to the first wall instead.
+    "house": {"laser_model_type": "beam"},
+}
 
 
 def default_start(world):

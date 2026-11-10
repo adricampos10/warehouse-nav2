@@ -1,0 +1,10 @@
+# From where I started the scan (the entrance) to the far end of the living room.
+description: Drive from the entrance to the living room of my home
+world: house
+# My home's passages are 60-80 cm wide, so the robot (44 cm) passes a few
+# centimetres from the walls; contact is what this limit has to catch.
+min_clearance: 0.02
+start: [0.0, 0.0]
+goals:
+  - [1.1, 6.0]
+timeout: 180

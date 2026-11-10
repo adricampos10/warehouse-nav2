@@ -27,6 +27,8 @@ Steps:
      what was seen through windows or mirrors is dropped.
   5. --fill x,y turns the unknown pocket around (x, y) into free space, for a
      part of a room I didn't scan.
+  6. Walls lose one layer of cells on the free side (the scan makes them
+     fatter than they are), but never get thinner than two cells.
 
 The database holds photos of the place, so it stays out of git; only the map
 (the occupancy grid, no images) goes in the repo.
@@ -168,11 +170,32 @@ def build_map(frames, fill=()):
     free = keep_components(free, path)
     for x, y in fill:
         free |= unknown_pocket(free, occupied, cells(np.array([[x, y]])))
+    peeled = thin_walls(occupied, free)
+    occupied &= ~peeled
+    free |= peeled
 
     grid = np.full((width, height), UNKNOWN, np.uint8)
     grid[free] = FREE
     grid[occupied] = OCCUPIED
     return np.flipud(grid.T), origin
+
+
+def thin_walls(occupied, free):
+    """Occupied cells to give back to free space: one layer on the free side.
+
+    The scan makes walls and furniture a few centimetres fatter than they
+    are (LiDAR noise, small pose errors), which turns my doorways into slots
+    the robot barely fits through. A cell is peeled if free space is on one
+    side and at least two more occupied cells are behind it, so a wall is
+    never left thinner than two cells (10 cm) and no hole opens in it.
+    """
+    pad = np.pad(occupied, 3), np.pad(free, 3)
+    peeled = np.zeros_like(pad[0])
+    for dx, dy in ((1, 0), (-1, 0), (0, 1), (0, -1)):
+        def shifted(mask, k):  # mask at (i + k*dx, j + k*dy)
+            return np.roll(mask, (-k * dx, -k * dy), axis=(0, 1))
+        peeled |= (pad[0] & shifted(pad[1], -1) & shifted(pad[0], 1) & shifted(pad[0], 2))
+    return peeled[3:-3, 3:-3]
 
 
 def drop_specks(mask, min_cells):

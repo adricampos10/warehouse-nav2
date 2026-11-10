@@ -1,0 +1,14 @@
+# Through the hallway, up the middle corridor, into the living room and back
+# to the entrance.
+description: Tour my home and come back to the entrance
+world: house
+# My home's passages are 60-80 cm wide, so the robot (44 cm) passes a few
+# centimetres from the walls; contact is what this limit has to catch.
+min_clearance: 0.02
+start: [0.0, 0.0]
+goals:
+  - [-3.5, 0.8]
+  - [-1.9, 3.6]
+  - [1.1, 6.0]
+  - [0.0, 0.0]
+timeout: 400

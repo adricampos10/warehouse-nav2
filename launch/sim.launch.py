@@ -25,11 +25,12 @@ from launch.conditions import IfCondition
 from launch.launch_description_sources import (AnyLaunchDescriptionSource,
                                                PythonLaunchDescriptionSource)
 from launch.substitutions import LaunchConfiguration
+from nav2_common.launch import RewrittenYaml
 
 ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT / "scripts"))
 from metrics import validate_scenario  # noqa: E402
-from worlds import DEFAULT_WORLD, default_start, launch_args  # noqa: E402
+from worlds import DEFAULT_WORLD, PARAM_REWRITES, default_start, launch_args  # noqa: E402
 
 
 def nav2_simulation(context):
@@ -49,6 +50,10 @@ def nav2_simulation(context):
 
     bringup = Path(get_package_share_directory("nav2_bringup")) / "launch" / "tb3_simulation_launch.py"
     arguments = {"headless": "True", "use_rviz": "False", **launch_args(world, start, ROOT)}
+    if world in PARAM_REWRITES:  # Nav2's own parameters, with my changes for this world
+        defaults = Path(get_package_share_directory("nav2_bringup")) / "params" / "nav2_params.yaml"
+        arguments["params_file"] = RewrittenYaml(source_file=str(defaults), param_rewrites=PARAM_REWRITES[world],
+                                                 convert_types=True).perform(context)
     return [IncludeLaunchDescription(PythonLaunchDescriptionSource(str(bringup)),
                                      launch_arguments=arguments.items()), *actions]
 
