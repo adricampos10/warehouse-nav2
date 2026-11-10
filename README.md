@@ -37,6 +37,24 @@ ros2 launch /ws/launch/sim.launch.py world_name:=warehouse viz:=true            
 ros2 launch /ws/launch/sim.launch.py scenario:=/ws/scenarios/warehouse_shelf.yaml   # to test it
 ```
 
+## My home, scanned with my iPhone
+![Nav2 map of my home made from an iPhone LiDAR scan: white is free, black is walls and furniture, grey is unknown](docs/images/house_map.png)
+
+I scanned my home (about 11 × 10 m) with the RTAB-Map iOS app on my iPhone 16 Pro Max, which uses its LiDAR and ARKit, and saved the scan with "Optimize" so the poses are corrected by its loop closures. [`scan_to_map.py`](scripts/scan_to_map.py) turns that database into a Nav2 map ([`maps/house.pgm`](maps/house.pgm) + `.yaml`) without installing RTAB-Map:
+
+- it back-projects every LiDAR depth image into 3D points with the frame's optimized pose;
+- it finds the floor, and marks points 0.10–1.5 m above it as obstacles;
+- it turns the map so the walls line up with the axes, with (0, 0) where I started;
+- a cell is occupied if it has enough obstacle points and the camera didn't see through it; free space is where the floor was seen or the camera saw through, connected to the path I walked (so what was seen through windows and mirrors is dropped);
+- `--fill x,y` turns an enclosed unknown area into free space, for a part of a room I didn't scan.
+
+```bash
+docker run --rm -v "$PWD":/ws warehouse-nav2:jazzy \
+    python3 /ws/scripts/scan_to_map.py /ws/house1.db /ws/maps/house \
+    --fill=0.68,5.63 --fill=-0.08,5.88 --fill=1.58,5.58
+```
+The scan itself stays out of the repo, because it holds photos of my home; the map has no images. Next: a Gazebo world built from this map, so the robot can drive through my home in the simulation.
+
 ## Run the scenario suite
 Each file in [`scenarios/`](scenarios) describes a navigation test: the world (Nav2's TurtleBot3 sandbox by default, or my warehouse), start pose, one or more goals, a time limit in simulated seconds (read from Gazebo's `/clock`, so a slow machine or a busy CI runner doesn't make a scenario time out), and whether Nav2 should succeed or fail:
 ```yaml
