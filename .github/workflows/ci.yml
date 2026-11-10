@@ -1,7 +1,8 @@
 # CI: on every pull request and every push to main, run the unit tests, then
 # every navigation scenario in its own headless Gazebo simulation (one
 # parallel job per file in scenarios/), and publish a summary table of the
-# results.
+# results. A pull request that only changes documentation (README.md or
+# docs/) skips the tests and the scenarios.
 name: CI
 
 on:
@@ -13,7 +14,40 @@ on:
   workflow_dispatch:
 
 jobs:
+  # Decides whether the tests need to run. I can't use paths-ignore on the
+  # whole workflow: main requires the report check, and a workflow that
+  # doesn't start never reports it, so the pull request would wait forever.
+  changes:
+    runs-on: ubuntu-24.04
+    outputs:
+      code: ${{ steps.check.outputs.code }}
+    steps:
+      - name: Check out the code
+        uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+
+      - name: Check whether anything besides documentation changed
+        id: check
+        env:
+          BASE: ${{ github.event.pull_request.base.sha }}
+        run: |
+          if [ "${{ github.event_name }}" != "pull_request" ]; then
+            echo "code=true" >> "$GITHUB_OUTPUT"  # main and manual runs: always test everything
+            exit 0
+          fi
+          echo "Files changed in this pull request:"
+          git diff --name-only "$BASE" HEAD | tee changed.txt
+          if grep -vE '^(README\.md|docs/)' changed.txt | grep -q .; then
+            echo "code=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "Only documentation changed: skipping the tests and the scenarios."
+            echo "code=false" >> "$GITHUB_OUTPUT"
+          fi
+
   unit-tests:
+    needs: changes
+    if: needs.changes.outputs.code == 'true'
     runs-on: ubuntu-24.04
     steps:
       - name: Check out the code
@@ -31,6 +65,8 @@ jobs:
         run: pytest -v
 
   list-scenarios:
+    needs: changes
+    if: needs.changes.outputs.code == 'true'
     runs-on: ubuntu-24.04
     outputs:
       names: ${{ steps.list.outputs.names }}
@@ -71,16 +107,19 @@ jobs:
 
   # Also the single gate for branch protection: it always runs, writes the
   # table and fails if the unit tests or any scenario failed, so main only
-  # needs to require this one check, however many scenarios there are.
+  # needs to require this one check, however many scenarios there are. For a
+  # documentation-only pull request it passes without them.
   report:
-    needs: [unit-tests, scenario]
+    needs: [changes, unit-tests, scenario]
     if: always()
     runs-on: ubuntu-24.04
     steps:
       - name: Check out the code
+        if: needs.changes.outputs.code == 'true'
         uses: actions/checkout@v7
 
       - name: Download the results
+        if: needs.changes.outputs.code == 'true'
         uses: actions/download-artifact@v8
         with:
           pattern: result-*
@@ -88,10 +127,18 @@ jobs:
           path: results
 
       - name: Write the summary table
+        if: needs.changes.outputs.code == 'true'
         run: python3 scripts/report.py results/*.json >> "$GITHUB_STEP_SUMMARY"
 
-      - name: Fail if the unit tests or any scenario failed
-        if: needs.unit-tests.result != 'success' || needs.scenario.result != 'success'
+      - name: Say why nothing ran
+        if: needs.changes.outputs.code == 'false'
+        run: echo "Only documentation changed, so the tests and scenarios were skipped." >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Fail if the change check, the unit tests or any scenario failed
+        if: >-
+          needs.changes.result != 'success' ||
+          (needs.changes.outputs.code == 'true' &&
+           (needs.unit-tests.result != 'success' || needs.scenario.result != 'success'))
         run: |
-          echo "unit-tests: ${{ needs.unit-tests.result }}, scenarios: ${{ needs.scenario.result }}"
+          echo "changes: ${{ needs.changes.result }}, unit-tests: ${{ needs.unit-tests.result }}, scenarios: ${{ needs.scenario.result }}"
           exit 1

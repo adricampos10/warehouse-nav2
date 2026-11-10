@@ -136,7 +136,7 @@ python3 -m venv .venv
 The settings in [`.vscode/`](.vscode) point VS Code at `.venv` and pytest, so the tests show up in the Testing panel, where I can run or debug each one with breakpoints.
 
 ### On GitHub Actions
-On every pull request and every push to `main`, the [workflow](.github/workflows/ci.yml) runs the unit tests first, then one parallel job per scenario file (a build matrix, so adding a YAML file adds a job), and finally writes the results table to the run's summary page.
+On every pull request and every push to `main`, the [workflow](.github/workflows/ci.yml) runs the unit tests first, then one parallel job per scenario file (a build matrix, so adding a YAML file adds a job), and finally writes the results table to the run's summary page. A pull request that only changes documentation (`README.md` or `docs/`) skips the tests and the scenarios: a first job lists the changed files, and the final `report` job, which `main` requires, still runs and passes. A workflow-level `paths-ignore` would never start for those pull requests, so the required check would never come and the merge would wait forever.
 
 ## Quick check
 To check that everything starts and the robot can drive, I run the shortest scenario on its own (about a minute):
