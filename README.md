@@ -47,14 +47,14 @@ I scanned my home (about 11 × 10 m) with the RTAB-Map iOS app on my iPhone 16 P
 - it turns the map so the walls line up with the axes, with (0, 0) where I started;
 - a cell is occupied if it has enough obstacle points and the camera didn't see through it; free space is where the floor was seen or the camera saw through, connected to the path I walked (so what was seen through windows and mirrors is dropped);
 - `--fill x,y` turns an enclosed unknown area into free space, for a part of a room I didn't scan;
-- walls lose one layer of cells on the free side, because the scan makes them fatter than they are (never thinner than two cells, so no hole opens);
-- `--clear x,y,r` removes scan noise I marked by hand: occupied cells inside the circle become free. I circled the specks on the map image, then fitted each circle so it doesn't touch a wall.
+- walls lose one layer of cells on the free side, because the scan makes them fatter than they are (never thinner than two cells, so no hole opens).
 
-[`make_house_map.sh`](scripts/make_house_map.sh) has the exact command, and it also rebuilds the Gazebo world:
 ```bash
-scripts/make_house_map.sh
+docker run --rm -v "$PWD":/ws warehouse-nav2:jazzy \
+    python3 /ws/scripts/scan_to_map.py /ws/house1.db /ws/maps/house \
+    --fill=0.68,5.63 --fill=-0.08,5.88 --fill=1.58,5.58
 ```
-The scan itself stays out of the repo, because it holds photos of my home; the map has no images.
+After that, I removed a few specks of scan noise from `maps/house.pgm` by hand (small blobs and dashes in open floor), so the map in the repo is that edited version. The scan itself stays out of the repo, because it holds photos of my home; the map has no images.
 
 ### Driving through it in Gazebo
 The scan has no list of walls like my warehouse, so [`map_to_world.py`](scripts/map_to_world.py) builds the Gazebo world from the map itself: it covers the occupied cells with as few boxes as it can (about 1,000) and makes them 1 m high, so the robot's laser sees in Gazebo exactly what Nav2 has in its map. A unit test fails if the world is out of date with the map:
