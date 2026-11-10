@@ -61,7 +61,7 @@ The scan has no list of walls like my warehouse, so [`map_to_world.py`](scripts/
 ```bash
 python3 scripts/map_to_world.py maps/house.yaml worlds/house.sdf.xacro
 ```
-`house` is a third world in [`worlds.py`](scripts/worlds.py), with three scenarios: to the living room, a tour of the home and back, and through a narrow doorway into the room on the left.
+`house` is a third world in [`worlds.py`](scripts/worlds.py), with two scenarios: to the living room, and a tour of the home and back. I also had one through the doorway into the room on the left, but in my map it leaves the robot about 1 cm: it passed five times out of five on my Mac and then touched the frame on GitHub Actions, so I removed it rather than keep a flaky test.
 
 Two things broke on the way, both worth knowing:
 - **Gazebo sometimes didn't start.** Nav2's launch file runs xacro (which writes the world to a temporary file) and Gazebo at the same time. With 1,000 boxes inline, xacro was sometimes still writing when Gazebo opened the file. The walls now live in their own SDF file ([`worlds/house_walls.sdf`](worlds/house_walls.sdf)) that the world includes, so the world is as small as my warehouse.
@@ -91,8 +91,7 @@ Every scenario gets a fresh headless simulation in its own container. The image 
 |---|---|---|---|---|---|---|---|
 | cross_map | PASS | 1/1 | 14.7 | 4.54 | 0.15 | - | all goals reached |
 | house_living_room | PASS | 1/1 | 21.1 | 6.78 | 0.05 | - | all goals reached |
-| house_narrow_door | PASS | 1/1 | 45.5 | 7.22 | 0.01 | - | all goals reached |
-| house_tour | PASS | 4/4 | 92.3 | 25.36 | 0.03 | - | all goals reached |
+| house_tour | PASS | 4/4 | 74.5 | 20.64 | 0.06 | - | all goals reached |
 | patrol_loop | PASS | 4/4 | 49.9 | 11.62 | 0.12 | - | all goals reached |
 | short_goal | PASS | 1/1 | 6.1 | 2.31 | 0.14 | - | all goals reached |
 | unreachable_goal | PASS | 0/1 | 0.0 | 0.00 | 0.30 | - | failed as expected |
