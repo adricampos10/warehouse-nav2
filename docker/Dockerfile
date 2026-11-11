@@ -1,5 +1,7 @@
 FROM ros:jazzy
 ENV DEBIAN_FRONTEND=noninteractive
+# Retry downloads: Ubuntu's mirrors are sometimes slow or drop connections.
+RUN echo 'Acquire::Retries "5";' > /etc/apt/apt.conf.d/80-retries
 RUN apt-get update && apt-get install -y --no-install-recommends \
       ros-jazzy-navigation2 ros-jazzy-nav2-bringup \
       ros-jazzy-ros-gz ros-jazzy-nav2-minimal-tb3-sim \
