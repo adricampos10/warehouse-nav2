@@ -78,9 +78,33 @@ jobs:
         id: list
         run: echo "names=$(ls scenarios/*.yaml | xargs -n1 basename | sed 's/\.yaml$//' | jq -R . | jq -cs .)" >> "$GITHUB_OUTPUT"
 
+  # Builds the simulation image once and stores its layers in GitHub Actions'
+  # cache. Before, every scenario job built it from scratch, downloading
+  # ROS 2, Nav2 and Gazebo from Ubuntu's mirrors 11 times per run; when the
+  # mirrors were slow, jobs failed or hit the 30-minute timeout. Now the
+  # layers are only rebuilt when docker/Dockerfile changes.
+  build-image:
+    needs: changes
+    if: needs.changes.outputs.code == 'true'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    steps:
+      - name: Check out the code
+        uses: actions/checkout@v7
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v4
+
+      - name: Build the Docker image into the cache
+        uses: docker/build-push-action@v7
+        with:
+          context: docker/
+          cache-from: type=gha,scope=warehouse-nav2
+          cache-to: type=gha,mode=max,scope=warehouse-nav2
+
   scenario:
     name: scenario (${{ matrix.scenario }})
-    needs: [unit-tests, list-scenarios]
+    needs: [unit-tests, list-scenarios, build-image]
     runs-on: ubuntu-24.04
     timeout-minutes: 30
     strategy:
@@ -91,8 +115,16 @@ jobs:
       - name: Check out the code
         uses: actions/checkout@v7
 
-      - name: Build the Docker image
-        run: docker build -t warehouse-nav2:jazzy docker/
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v4
+
+      - name: Load the Docker image from the cache
+        uses: docker/build-push-action@v7
+        with:
+          context: docker/
+          tags: warehouse-nav2:jazzy
+          load: true
+          cache-from: type=gha,scope=warehouse-nav2
 
       - name: Run the scenario
         run: scripts/run_scenarios.sh ${{ matrix.scenario }}
@@ -110,7 +142,7 @@ jobs:
   # needs to require this one check, however many scenarios there are. For a
   # documentation-only pull request it passes without them.
   report:
-    needs: [changes, unit-tests, scenario]
+    needs: [changes, unit-tests, build-image, scenario]
     if: always()
     runs-on: ubuntu-24.04
     steps:
