@@ -12,8 +12,8 @@ I'm building an autonomous warehouse robot with **ROS 2 Jazzy + Nav2**, simulate
 - Scenario suite (moving obstacles, narrow aisles, people crossing) run headless in Docker, reporting success rate, time to goal and minimum obstacle distance.
 - CI with GitHub Actions running the scenarios on every change.
 
-## Roadmap: fleet performance
-Next, I'm turning the simulation into a small robot fleet and practising fleet performance work on its data: finding recurring failures and early warning signs in the telemetry, building dashboards and alerts that can be trusted, detecting config drift, and packaging the evidence for engineering. Each part gets its own pull request:
+## Roadmap: robot fleet data
+Next, I'm turning the simulation into a small robot fleet and working with its data: finding recurring failures and early warning signs in the telemetry, building dashboards and alerts that can be trusted, detecting config drift, and packaging the evidence for engineering. Each part gets its own pull request:
 
 1. **Simulated fleet**: several robots or runs, each with its own ID, on the existing scenarios, so there is fleet data and not just one robot's.
 2. **Telemetry**: time series per robot and mission in a file (CSV or Parquet): mission state, speed, minimum distance to obstacles, localisation quality (AMCL covariance and error against Gazebo's true pose), replans, recoveries and the time of each leg.
