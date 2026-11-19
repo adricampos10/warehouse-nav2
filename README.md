@@ -12,6 +12,22 @@ I'm building an autonomous warehouse robot with **ROS 2 Jazzy + Nav2**, simulate
 - Scenario suite (moving obstacles, narrow aisles, people crossing) run headless in Docker, reporting success rate, time to goal and minimum obstacle distance.
 - CI with GitHub Actions running the scenarios on every change.
 
+## Roadmap: fleet performance
+Next, I'm turning the simulation into a small robot fleet and practising fleet performance work on its data: finding recurring failures and early warning signs in the telemetry, building dashboards and alerts that can be trusted, detecting config drift, and packaging the evidence for engineering. Each part gets its own pull request:
+
+1. **Simulated fleet**: several robots or runs, each with its own ID, on the existing scenarios, so there is fleet data and not just one robot's.
+2. **Telemetry**: time series per robot and mission in a file (CSV or Parquet): mission state, speed, minimum distance to obstacles, localisation quality (AMCL covariance and error against Gazebo's true pose), replans, recoveries and the time of each leg.
+3. **Injected faults**: realistic failures on some robots: a sensor that publishes slower or drops out, odometry drift, a changed Nav2 parameter (e.g. the inflation), or a "battery" or "motor" that degrades over time.
+4. **Health checks and `/diagnostics`**: a node that checks each sensor publishes at its expected rate and reports OK, WARN or ERROR on `/diagnostics`, and a pre-run health check that refuses to start a mission if a sensor isn't healthy.
+5. **Rosbag on failure**: a buffer of the last few minutes that is saved only when a mission fails, to investigate what the robot was doing.
+6. **Analysis in Python with pandas**: read the telemetry, compare each robot with the fleet (resampling, rolling means, z-scores), find outliers and trends (leading indicators), and score the alerts against the injected faults: how many they catch and how many false alarms they raise.
+7. **Config drift audit**: a baseline of parameters per robot type and a script that compares each robot's real configuration with it, with the % of compliance and the list of differences.
+8. **Dashboard and alerts**: a simple panel (Lichtblick, or HTML with Python plots) with success rate, MTBF, incidents per robot, robots on alert and trends. Alert thresholds come from the data, with a "lasts N minutes" condition, to keep false positives low.
+9. **Automatic evidence pack**: a report (Markdown or PDF) that says, for each failure type, how often it happens, on which robots, since when, what it costs (lost missions) and the evidence (plots and an example rosbag).
+10. **CI**: all of the above runs on GitHub Actions and keeps each run's metrics, to see regressions over time.
+
+I'm doing 2, 3, 4 and 6 first, then 7, 8 and 9.
+
 ## Docs
 - [Command cheatsheet](docs/cheatsheet.md) — the Docker, ROS 2 and Git commands I use, explained.
 - [Diagrams](docs/diagrams/README.md) — how the project is put together.
