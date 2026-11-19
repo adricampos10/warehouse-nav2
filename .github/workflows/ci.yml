@@ -70,13 +70,16 @@ jobs:
     runs-on: ubuntu-24.04
     outputs:
       names: ${{ steps.list.outputs.names }}
+      missions: ${{ steps.list.outputs.missions }}
     steps:
       - name: Check out the code
         uses: actions/checkout@v7
 
-      - name: List the scenario files
+      - name: List the scenario and mission files
         id: list
-        run: echo "names=$(ls scenarios/*.yaml | xargs -n1 basename | sed 's/\.yaml$//' | jq -R . | jq -cs .)" >> "$GITHUB_OUTPUT"
+        run: |
+          echo "names=$(ls scenarios/*.yaml | xargs -n1 basename | sed 's/\.yaml$//' | jq -R . | jq -cs .)" >> "$GITHUB_OUTPUT"
+          echo "missions=$(ls missions/*.yaml | xargs -n1 basename | sed 's/\.yaml$//' | jq -R . | jq -cs .)" >> "$GITHUB_OUTPUT"
 
   # Builds the simulation image once and stores its layers in GitHub Actions'
   # cache. Before, every scenario job built it from scratch, downloading
@@ -137,12 +140,49 @@ jobs:
           path: results/${{ matrix.scenario }}.json
           if-no-files-found: warn
 
+  # Each behaviour-tree mission (missions/*.yaml) runs like a scenario: a
+  # fresh simulation, then run_mission.py ticks the tree against Nav2.
+  mission:
+    name: mission (${{ matrix.mission }})
+    needs: [unit-tests, list-scenarios, build-image]
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        mission: ${{ fromJSON(needs.list-scenarios.outputs.missions) }}
+    steps:
+      - name: Check out the code
+        uses: actions/checkout@v7
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v4
+
+      - name: Load the Docker image from the cache
+        uses: docker/build-push-action@v7
+        with:
+          context: docker/
+          tags: warehouse-nav2:jazzy
+          load: true
+          cache-from: type=gha,scope=warehouse-nav2
+
+      - name: Run the mission
+        run: scripts/run_mission.sh ${{ matrix.mission }}
+
+      - name: Upload the result
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: mission-${{ matrix.mission }}
+          path: results/mission_${{ matrix.mission }}.json
+          if-no-files-found: warn
+
   # Also the single gate for branch protection: it always runs, writes the
   # table and fails if the unit tests or any scenario failed, so main only
   # needs to require this one check, however many scenarios there are. For a
   # documentation-only pull request it passes without them.
   report:
-    needs: [changes, unit-tests, build-image, scenario]
+    needs: [changes, unit-tests, build-image, scenario, mission]
     if: always()
     runs-on: ubuntu-24.04
     steps:
@@ -158,9 +198,23 @@ jobs:
           merge-multiple: true
           path: results
 
+      - name: Download the mission results
+        if: needs.changes.outputs.code == 'true'
+        uses: actions/download-artifact@v8
+        with:
+          pattern: mission-*
+          merge-multiple: true
+          path: mission-results
+
       - name: Write the summary table
         if: needs.changes.outputs.code == 'true'
-        run: python3 scripts/report.py results/*.json >> "$GITHUB_STEP_SUMMARY"
+        run: |
+          python3 scripts/report.py results/*.json >> "$GITHUB_STEP_SUMMARY"
+          for f in mission-results/*.json; do
+            if [ -f "$f" ]; then
+              python3 -c "import json,sys; r=json.load(open(sys.argv[1])); print(f\"- mission **{r['name']}**: {'PASS' if r['passed'] else 'FAIL'}, {r['reason']} ({r['elapsed']} s)\")" "$f" >> "$GITHUB_STEP_SUMMARY"
+            fi
+          done
 
       - name: Say why nothing ran
         if: needs.changes.outputs.code == 'false'
@@ -170,7 +224,8 @@ jobs:
         if: >-
           needs.changes.result != 'success' ||
           (needs.changes.outputs.code == 'true' &&
-           (needs.unit-tests.result != 'success' || needs.scenario.result != 'success'))
+           (needs.unit-tests.result != 'success' || needs.scenario.result != 'success' ||
+            needs.mission.result != 'success'))
         run: |
-          echo "changes: ${{ needs.changes.result }}, unit-tests: ${{ needs.unit-tests.result }}, scenarios: ${{ needs.scenario.result }}"
+          echo "changes: ${{ needs.changes.result }}, unit-tests: ${{ needs.unit-tests.result }}, scenarios: ${{ needs.scenario.result }}, missions: ${{ needs.mission.result }}"
           exit 1

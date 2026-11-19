@@ -1,0 +1,16 @@
+# Patrol my home: the hallway, the living room and a "balcony" that is
+# outside the map on purpose, so the robot can't reach it: the tree retries
+# it once, skips it and carries on, and the mission still passes because the
+# robot gets back to the entrance.
+description: Patrol my home and come back to the entrance
+world: house
+retries: 1
+timeout: 500
+places:
+  - name: hallway
+    pose: [-3.5, 0.8]
+  - name: balcony
+    pose: [5.0, 3.0]
+  - name: living room
+    pose: [1.1, 6.0]
+home: [0.0, 0.0]
