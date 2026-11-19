@@ -1,2 +1,4 @@
 pytest
 pyyaml
+py_trees>=2.2,<2.3; python_version < "3.10"  # newer releases need Python 3.10+ (my .venv is 3.9)
+py_trees; python_version >= "3.10"

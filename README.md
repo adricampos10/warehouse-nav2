@@ -146,6 +146,41 @@ The settings in [`.vscode/`](.vscode) point VS Code at `.venv` and pytest, so th
 ### On GitHub Actions
 On every pull request and every push to `main`, the [workflow](.github/workflows/ci.yml) runs the unit tests first, then one parallel job per scenario file (a build matrix, so adding a YAML file adds a job), and finally writes the results table to the run's summary page. The simulation image is built once per run by its own job, with its layers stored in GitHub Actions' cache: the scenario jobs load it from there instead of each one downloading ROS 2, Nav2 and Gazebo from Ubuntu's mirrors, which used to make jobs fail or time out when the mirrors were slow. The layers are only rebuilt when `docker/Dockerfile` changes. A pull request that only changes documentation (`README.md` or `docs/`) skips the tests and the scenarios: a first job lists the changed files, and the final `report` job, which `main` requires, still runs and passes. A workflow-level `paths-ignore` would never start for those pull requests, so the required check would never come and the merge would wait forever.
 
+## A patrol mission as a behaviour tree
+A scenario sends fixed goals. A mission decides what to do next, with a behaviour tree built with [py_trees](https://github.com/splintered-reality/py_trees): visit a list of places, retry a place Nav2 can't reach, skip it if it still fails, and always go back home. [`missions/house_patrol.yaml`](missions/house_patrol.yaml) patrols my home: the hallway, a "balcony" that is outside the map on purpose (so it can't be reached), and the living room.
+
+```bash
+scripts/run_mission.sh house_patrol
+```
+
+This is the tree as it ended, on my Mac ([✓] success, [✕] failure, [-] not run):
+```
+{-} Mission [✓]
+    {-} Patrol [✓]
+        {o} Visit hallway [✓]
+            {-} Reach hallway [✓]
+                -^- Retry hallway [✓] -- succeeded [status: 0 failure from 2]
+                    --> Go to hallway [✓]
+                --> Visited hallway [✓]
+            --> Skip hallway [-]
+        {o} Visit balcony [✓]
+            {-} Reach balcony [✕]
+                -^- Retry balcony [✕] -- final failure [status: 2 failure from 2]
+                    --> Go to balcony [✕]
+                --> Visited balcony [-]
+            --> Skip balcony [✓]
+        {o} Visit living room [✓]
+            ...
+    -^- Return home [✓] -- succeeded [status: 0 failure from 2]
+        --> Go home [✓]
+
+[house_patrol] PASS: visited 2/3 places and got home, skipped balcony
+```
+
+`{-}` is a sequence (every child in turn, stops at the first failure), `{o}` a selector (tries its children until one succeeds) and `-^-` a retry. Each place is a selector: reach it (with retries), or else note it as skipped, so one blocked room doesn't end the patrol; the mission only fails if the robot can't get home, or runs out of time.
+
+The tree is in [`mission.py`](scripts/mission.py), with no ROS imports: it talks to a small navigation interface (`go_to`, `done`, `succeeded`, `cancel`), so the unit tests drive it with a fake navigator that fails on purpose. [`run_mission.py`](scripts/run_mission.py) plugs Nav2 into that interface and ticks the tree, with the timeout in simulated seconds. On GitHub Actions every file in `missions/` runs in its own job, like the scenarios, and the `report` gate fails if a mission fails.
+
 ## Quick check
 To check that everything starts and the robot can drive, I run the shortest scenario on its own (about a minute):
 ```bash
