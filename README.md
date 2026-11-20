@@ -197,6 +197,29 @@ This is the tree as it ended, on my Mac ([✓] success, [✕] failure, [-] not r
 
 The tree is in [`mission.py`](scripts/mission.py), with no ROS imports: it talks to a small navigation interface (`go_to`, `done`, `succeeded`, `cancel`), so the unit tests drive it with a fake navigator that fails on purpose. [`run_mission.py`](scripts/run_mission.py) plugs Nav2 into that interface and ticks the tree, with the timeout in simulated seconds. On GitHub Actions every file in `missions/` runs in its own job, like the scenarios, and the `report` gate fails if a mission fails.
 
+## Telemetry
+Every scenario and mission now records a time series of what the robot was doing, the raw material for spotting recurring failures and early warning signs across runs (see the roadmap). [`telemetry.py`](scripts/telemetry.py) writes one row every 0.5 simulated seconds to `results/telemetry/<scenario>_<robot_id>.csv`:
+
+| Column | From | Why |
+|---|---|---|
+| `t` | simulated clock | a common time base that doesn't depend on how fast the machine is |
+| `robot_id`, `run_id`, `scenario`, `leg`, `state` | the runner | to compare robots and runs, and know which leg of the route the robot was on and how it ended |
+| `x`, `y` | TF `map → base_footprint` | where the robot thinks it is, as Nav2 uses it |
+| `gt_x`, `gt_y`, `loc_error` | Gazebo's true pose | how wrong that belief really is (a real robot can't measure this; in simulation it tells me whether the indicators below work) |
+| `std_x`, `std_y`, `std_yaw` | AMCL's covariance | how unsure the robot is of where it is, which a real robot does have: if it rises before the error does, it's a leading indicator |
+| `speed` | `/odom` | a robot slower than usual can mean a degrading motor, or a robot hesitating |
+| `clearance` | `/scan` in the robot's frame | distance from the robot's edge to the nearest obstacle at each moment, not only the minimum of the run |
+| `recoveries`, `distance_remaining` | Nav2's action feedback | repeated recoveries are a classic sign of trouble |
+| `plans` | `/plan` | global paths published; Nav2's default behaviour tree replans once a second even when nothing changes, so its rate, not the count, is what tells something |
+
+A second file, `<scenario>_<robot_id>_legs.csv`, has one row per goal (start, end, duration, result, recoveries), so leg times don't have to be rebuilt from the time series. In a mission, every goal the tree sends is a leg, retries included: the unreachable balcony shows up as two failed legs of 0.02 s, because the planner rejects it straight away.
+
+Two decisions worth explaining:
+- **The estimated pose comes from TF, not from `/amcl_pose`.** AMCL only publishes when it updates (every 0.25 m or 0.2 rad of motion), so at 0.46 m/s its last pose can be half a second old. My first version used it, and `loc_error` came out at 0.17–0.33 m; with TF (AMCL's last correction plus the odometry since then) it is 0.01–0.12 m. The extra error was lag, not localisation.
+- **CSV, not Parquet.** Any tool reads it, and it needs nothing beyond Python's standard library (the simulation image has no pandas). Parquet pays off with millions of rows; a run here has a few hundred.
+
+`ROBOT_ID` and `RUN_ID` come from the environment, so a fleet runner can tell robots apart. On GitHub Actions, each job uploads its telemetry as an artifact.
+
 ## Quick check
 To check that everything starts and the robot can drive, I run the shortest scenario on its own (about a minute):
 ```bash

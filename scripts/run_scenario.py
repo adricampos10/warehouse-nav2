@@ -35,6 +35,7 @@ from tf2_sensor_msgs import do_transform_cloud
 from metrics import edge_clearance, evaluate, obstacle_gap, path_length, validate_scenario
 from nav_utils import make_pose
 from obstacles import ROBOT_MODEL, WORLD, model_name
+from telemetry_ros import TelemetrySampler
 
 
 ROBOT_FRAME = "base_link"  # the frame the robot's footprint is centred on
@@ -47,6 +48,7 @@ class Recorder:
         self.recording = False
         self.positions = []
         self.min_clearance = None
+        self.clearance = None  # from the latest scan, for the telemetry
         self.projector = LaserProjection()
         # TF knows where the laser is mounted (a static transform from the URDF)
         self.tf_buffer = tf2_ros.Buffer()
@@ -74,6 +76,7 @@ class Recorder:
         points = [(float(p[0]), float(p[1]))
                   for p in point_cloud2.read_points(cloud, field_names=("x", "y"), skip_nans=True)]
         gap = edge_clearance(points)
+        self.clearance = gap
         if gap is not None and (self.min_clearance is None or gap < self.min_clearance):
             self.min_clearance = gap
 
@@ -145,18 +148,27 @@ def main():
     def sim_elapsed():
         return (clock.now() - sim_start).nanoseconds / 1e9
 
+    telemetry = TelemetrySampler(navigator, results_dir / "telemetry", name)
     goals_reached, timed_out = 0, False
-    for x, y in scenario["goals"]:
+    for leg, (x, y) in enumerate(scenario["goals"]):
         print(f"[{name}] Going to ({x}, {y})...", flush=True)
+        leg_start, feedback = sim_elapsed(), None
         navigator.goToPose(make_pose(navigator, x, y))
         while not navigator.isTaskComplete():
+            feedback = navigator.getFeedback() or feedback
+            telemetry.update(sim_elapsed(), leg, "driving", feedback, recorder.clearance)
             if sim_elapsed() > scenario["timeout"]:
                 navigator.cancelTask()
                 timed_out = True
                 break
+        result = "timed out" if timed_out else navigator.getResult().name.lower()
+        telemetry.update(sim_elapsed(), leg, result, feedback, recorder.clearance, force=True)
+        telemetry.leg(leg, (x, y), leg_start, sim_elapsed(), result,
+                      feedback.number_of_recoveries if feedback else 0)
         if timed_out or navigator.getResult() != TaskResult.SUCCEEDED:
             break
         goals_reached += 1
+    telemetry.close()
     elapsed, wall_elapsed = sim_elapsed(), time.monotonic() - wall_start
     recorder.recording = False
     obstacle_gap_min = watcher.min_gap if watcher else None

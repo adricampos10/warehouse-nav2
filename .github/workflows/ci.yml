@@ -140,6 +140,14 @@ jobs:
           path: results/${{ matrix.scenario }}.json
           if-no-files-found: warn
 
+      - name: Upload the telemetry
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: telemetry-${{ matrix.scenario }}
+          path: results/telemetry/
+          if-no-files-found: warn
+
   # Each behaviour-tree mission (missions/*.yaml) runs like a scenario: a
   # fresh simulation, then run_mission.py ticks the tree against Nav2.
   mission:
@@ -174,7 +182,15 @@ jobs:
         uses: actions/upload-artifact@v7
         with:
           name: mission-${{ matrix.mission }}
-          path: results/mission_${{ matrix.mission }}.json
+          path: results/missions/mission_${{ matrix.mission }}.json
+          if-no-files-found: warn
+
+      - name: Upload the telemetry
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: telemetry-mission-${{ matrix.mission }}
+          path: results/telemetry/
           if-no-files-found: warn
 
   # Also the single gate for branch protection: it always runs, writes the

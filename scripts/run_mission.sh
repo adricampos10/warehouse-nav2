@@ -2,7 +2,7 @@
 # Runs a behaviour-tree patrol mission end to end: a fresh headless
 # simulation of the mission's world in its own container, then
 # run_mission.py ticks the tree against Nav2. The result goes to
-# results/mission_<mission>.json. Exit code 0 only if the mission passed.
+# results/missions/mission_<mission>.json (telemetry in results/telemetry/). Exit code 0 only if the mission passed.
 #
 # Usage (from the repo root):
 #     scripts/run_mission.sh house_patrol      # missions/house_patrol.yaml
@@ -19,7 +19,7 @@ cleanup() {
 trap cleanup EXIT
 
 mkdir -p results
-rm -f "results/mission_$MISSION.json"
+rm -f "results/missions/mission_$MISSION.json"
 echo "=== $MISSION: starting the Nav2 simulation of '$WORLD' (headless)..."
 docker run -d --rm --name "$NAME" -v "$PWD":/ws "$IMAGE" \
   bash -c "source /opt/ros/jazzy/setup.bash && ros2 launch /ws/launch/sim.launch.py world_name:=$WORLD" \
