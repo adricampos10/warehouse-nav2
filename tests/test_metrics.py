@@ -174,3 +174,10 @@ def test_format_table():
     assert lines[2] == "| a | PASS | 1/1 | 20.0 | 2.50 | 0.09 | 0.40 | ok |"
     assert lines[3] == "| b | FAIL | 0/1 | 12.3 | - | - | - | x |"
     assert table.endswith("1/2 scenarios passed")
+
+
+def test_infrastructure_failures_are_labelled_apart():
+    from metrics import result
+    assert result({"passed": True}) == "PASS"
+    assert result({"passed": False}) == "FAIL"
+    assert result({"passed": False, "infra": True}) == "FAIL (infra)"

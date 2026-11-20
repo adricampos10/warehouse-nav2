@@ -23,7 +23,7 @@ from nav2_simple_commander.robot_navigator import BasicNavigator, TaskResult
 from rclpy.parameter import Parameter
 
 from mission import Log, build_tree, outcome, run, validate_mission
-from nav_utils import make_pose
+from nav_utils import INFRA_EXIT_CODE, STARTUP_TIMEOUT, make_pose, wait_for_nav2
 from run_scenario import Recorder, current_sim_time
 from telemetry_ros import TelemetrySampler
 from worlds import default_start
@@ -76,10 +76,18 @@ def main():
     rclpy.init()
     navigator = BasicNavigator()
     navigator.set_parameters([Parameter("use_sim_time", value=True)])
-    current_sim_time(navigator)
-    navigator.setInitialPose(make_pose(navigator, *default_start(mission["world"])))
+    clock_runs = current_sim_time(navigator, timeout=STARTUP_TIMEOUT) is not None
     print(f"[{name}] Waiting for Nav2 to become active...", flush=True)
-    navigator.waitUntilNav2Active()
+    if not clock_runs or not wait_for_nav2(navigator, default_start(mission["world"])):
+        reason = (f"infrastructure: Nav2 didn't become active in {STARTUP_TIMEOUT:.0f} s" if clock_runs
+                  else "infrastructure: the simulation clock never started")
+        (results_dir / "missions").mkdir(parents=True, exist_ok=True)
+        (results_dir / "missions" / f"mission_{name}.json").write_text(json.dumps({
+            "name": name, "description": mission["description"], "passed": False, "infra": True,
+            "reason": reason, "visited": [], "skipped": [], "attempts": {}, "elapsed": None,
+        }, indent=2) + "\n")
+        print(f"[{name}] FAIL: {reason}", flush=True)
+        sys.exit(INFRA_EXIT_CODE)
 
     clock, start = navigator.get_clock(), current_sim_time(navigator)
 

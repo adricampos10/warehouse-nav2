@@ -124,6 +124,13 @@ def evaluate(scenario, run):
     return True, "all goals reached"
 
 
+def result(r):
+    """PASS, FAIL, or FAIL (infra) when the simulation itself didn't start."""
+    if r["passed"]:
+        return "PASS"
+    return "FAIL (infra)" if r.get("infra") else "FAIL"
+
+
 def format_table(results):
     """Markdown table of scenario results (works in a terminal and on GitHub)."""
     def num(value, digits):
@@ -135,7 +142,7 @@ def format_table(results):
     ]
     for r in sorted(results, key=lambda r: r["name"]):
         lines.append(
-            f"| {r['name']} | {'PASS' if r['passed'] else 'FAIL'} "
+            f"| {r['name']} | {result(r)} "
             f"| {r['goals_reached']}/{r['goals_total']} | {num(r['elapsed'], 1)} "
             f"| {num(r['path_length'], 2)} | {num(r['clearance'], 2)} "
             f"| {num(r.get('obstacle_gap'), 2)} | {r['reason']} |"

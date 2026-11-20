@@ -26,24 +26,35 @@ fi
 
 mkdir -p results
 failed=0
+# Exit code 3 from run_scenario.py means Nav2 never became active (an
+# infrastructure problem, not a navigation failure): retry once with a fresh
+# simulation before calling it a failure.
+INFRA_EXIT_CODE=3
 for scenario in "${scenarios[@]}"; do
-  rm -f "results/$scenario.json"
-  echo "=== $scenario: starting the Nav2 simulation (headless)..."
-  # sim.launch.py reads the scenario's world and start from the file.
-  docker run -d --rm --name "$NAME" -v "$PWD":/ws "$IMAGE" \
-    bash -c "source /opt/ros/jazzy/setup.bash && ros2 launch /ws/launch/sim.launch.py scenario:=/ws/scenarios/$scenario.yaml" \
-    >/dev/null
+  for attempt in 1 2; do
+    rm -f "results/$scenario.json"
+    echo "=== $scenario: starting the Nav2 simulation (headless, attempt $attempt)..."
+    # sim.launch.py reads the scenario's world and start from the file.
+    docker run -d --rm --name "$NAME" -v "$PWD":/ws "$IMAGE" \
+      bash -c "source /opt/ros/jazzy/setup.bash && ros2 launch /ws/launch/sim.launch.py scenario:=/ws/scenarios/$scenario.yaml" \
+      >/dev/null
 
-  if ! docker exec "$NAME" bash -c "source /opt/ros/jazzy/setup.bash && cd /ws/scripts && timeout 600 python3 run_scenario.py /ws/scenarios/$scenario.yaml /ws/results"; then
-    failed=1
-    if [ ! -f "results/$scenario.json" ]; then
+    status=0
+    docker exec "$NAME" bash -c "source /opt/ros/jazzy/setup.bash && cd /ws/scripts && timeout 600 python3 run_scenario.py /ws/scenarios/$scenario.yaml /ws/results" || status=$?
+    if [ "$status" -ne 0 ] && [ ! -f "results/$scenario.json" ]; then
       echo "=== $scenario: crashed before saving a result. Last simulation logs:"
       docker logs "$NAME" 2>&1 | tail -60
     fi
-  fi
-  cleanup
-  # Wait until the container is gone so the next one can reuse the name.
-  while docker inspect "$NAME" >/dev/null 2>&1; do sleep 1; done
+    cleanup
+    # Wait until the container is gone so the next one can reuse the name.
+    while docker inspect "$NAME" >/dev/null 2>&1; do sleep 1; done
+    if [ "$status" -eq "$INFRA_EXIT_CODE" ] && [ "$attempt" -eq 1 ]; then
+      echo "=== $scenario: Nav2 didn't start; retrying with a fresh simulation"
+      continue
+    fi
+    break
+  done
+  [ "$status" -ne 0 ] && failed=1
 done
 
 echo

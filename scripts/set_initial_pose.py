@@ -16,7 +16,7 @@ import yaml
 from nav2_simple_commander.robot_navigator import BasicNavigator
 
 from metrics import validate_scenario
-from nav_utils import make_pose
+from nav_utils import wait_for_nav2
 from worlds import DEFAULT_WORLD, default_start
 
 
@@ -30,8 +30,8 @@ def main():
         start = default_start(target)
     rclpy.init()
     navigator = BasicNavigator()
-    navigator.setInitialPose(make_pose(navigator, *start))
-    navigator.waitUntilNav2Active()
+    if not wait_for_nav2(navigator, start):
+        sys.exit("Nav2 didn't become active; check the simulation's logs (docker logs nav2viz)")
     print("Nav2 is active: send goals on /goal_pose", flush=True)
     navigator.destroy_node()
     rclpy.shutdown()
