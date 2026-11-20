@@ -129,6 +129,8 @@ Every scenario gets a fresh headless simulation in its own container. The image 
 | warehouse_person_head_on | PASS | 1/1 | 10.8 | 3.67 | 0.28 | 0.30 | all goals reached |
 | warehouse_shelf | PASS | 1/1 | 18.1 | 7.24 | 0.20 | - | all goals reached |
 
+**A simulation that doesn't start is not a navigation failure.** Once on GitHub Actions, `warehouse_patrol` sat for 10 minutes at "Waiting for Nav2 to become active" until the runner's timeout killed it; the robot never got a goal. Its log showed `BasicNavigator` asking AMCL for its lifecycle state, and then nothing, while AMCL kept asking for an initial pose every 2 s. `waitUntilNav2Active()` waits for each of those answers with no time limit, and re-sends the initial pose with its first timestamp. So I replaced it with [`wait_for_nav2()`](scripts/nav_utils.py): every call has a time limit, the whole startup has a 3-minute deadline (the simulation clock too), and the initial pose is re-stamped on every attempt. If the startup fails, the scenario saves `"infra": true` and exits with code 3; the runner then retries once with a fresh simulation, and the table shows `FAIL (infra)` instead of a plain `FAIL`. Keeping infrastructure failures apart from the robot's own failures keeps the alerts honest.
+
 The narrow aisle taught me something: my first version only had goals at both ends, and the robot passed with its laser never closer than 0.80 m to anything, which is impossible inside a 1.0 m aisle. The planner had gone around the shelves, because the inflated costmap makes the narrow aisle expensive. A goal in the middle of the aisle forces it through, and now the clearance (0.21 m from the robot's edge) proves it.
 
 ### Moving obstacles

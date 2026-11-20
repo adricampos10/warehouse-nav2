@@ -33,7 +33,7 @@ from sensor_msgs_py import point_cloud2
 from tf2_sensor_msgs import do_transform_cloud
 
 from metrics import edge_clearance, evaluate, obstacle_gap, path_length, validate_scenario
-from nav_utils import make_pose
+from nav_utils import INFRA_EXIT_CODE, STARTUP_TIMEOUT, make_pose, wait_for_nav2
 from obstacles import ROBOT_MODEL, WORLD, model_name
 from telemetry_ros import TelemetrySampler
 
@@ -107,16 +107,22 @@ class ObstacleWatcher:
                 self.min_gap = gap
 
 
-def current_sim_time(node):
+def current_sim_time(node, timeout=None):
     """The simulated time, after spinning until the node's clock moves.
 
     With use_sim_time the clock only moves when a /clock message is handled
-    while the node spins, and waitUntilNav2Active() ends with a 2 s sleep that
-    doesn't spin, so without this the clock can be seconds behind.
+    while the node spins, and Nav2's startup can leave it stale (BasicNavigator's
+    waitUntilNav2Active() ended with a 2 s sleep that doesn't spin), so
+    without this the clock can be seconds behind. With a timeout (seconds of
+    my computer's time), returns None if the clock never moves: the
+    simulation isn't running.
     """
     clock = node.get_clock()
     last = clock.now()
+    deadline = None if timeout is None else time.monotonic() + timeout
     while clock.now() == last:
+        if deadline is not None and time.monotonic() > deadline:
+            return None
         rclpy.spin_once(node, timeout_sec=0.1)
     return clock.now()
 
@@ -132,13 +138,24 @@ def main():
     # until the first /clock message arrives).
     navigator.set_parameters([Parameter("use_sim_time", value=True)])
     clock = navigator.get_clock()
-    current_sim_time(navigator)
+    clock_runs = current_sim_time(navigator, timeout=STARTUP_TIMEOUT) is not None
     recorder = Recorder(navigator)  # isTaskComplete() spins the navigator, so these callbacks run
     watcher = ObstacleWatcher(len(scenario["obstacles"])) if scenario["obstacles"] else None
 
-    navigator.setInitialPose(make_pose(navigator, *scenario["start"]))
     print(f"[{name}] Waiting for Nav2 to become active...", flush=True)
-    navigator.waitUntilNav2Active()
+    if not clock_runs or not wait_for_nav2(navigator, scenario["start"]):
+        # Not a navigation failure: the simulation didn't start. The runner retries once.
+        reason = (f"infrastructure: Nav2 didn't become active in {STARTUP_TIMEOUT:.0f} s" if clock_runs
+                  else "infrastructure: the simulation clock never started")
+        results_dir.mkdir(parents=True, exist_ok=True)
+        (results_dir / f"{name}.json").write_text(json.dumps({
+            "name": name, "description": scenario["description"], "expect": scenario["expect"],
+            "passed": False, "infra": True, "reason": reason,
+            "goals_reached": 0, "goals_total": len(scenario["goals"]), "elapsed": None,
+            "wall_elapsed": None, "path_length": None, "clearance": None, "obstacle_gap": None,
+        }, indent=2) + "\n")
+        print(f"[{name}] FAIL: {reason}", flush=True)
+        sys.exit(INFRA_EXIT_CODE)
 
     recorder.recording = True
     if watcher:
