@@ -58,7 +58,7 @@
 <path d="M1205,258 L615,258" fill="none" stroke="#444441" stroke-width="1.2" stroke-dasharray="6 4" marker-end="url(#open)"/>
 <text x="910.0" y="253" text-anchor="middle" font-size="11" fill="#2C2C2A">world, map, start</text>
 <path d="M615,278 L745,278" fill="none" stroke="#444441" stroke-width="1.2" marker-end="url(#filled)"/>
-<text x="680.0" y="273" text-anchor="middle" font-size="11" fill="#2C2C2A">start the world, spawn the robot</text>
+<text x="680.0" y="273" text-anchor="middle" font-size="11" fill="#2C2C2A">start the world, spawn the robot (+ moving people)</text>
 <path d="M615,298 L880,298" fill="none" stroke="#444441" stroke-width="1.2" marker-end="url(#filled)"/>
 <text x="747.5" y="293" text-anchor="middle" font-size="11" fill="#2C2C2A">start Nav2 (configure → activate)</text>
 <path d="M745,320 L880,320" fill="none" stroke="#444441" stroke-width="1.2" marker-end="url(#open)"/>
@@ -68,9 +68,9 @@
 <path d="M1040,366 L1205,366" fill="none" stroke="#444441" stroke-width="1.2" marker-end="url(#filled)"/>
 <text x="1122.5" y="361" text-anchor="middle" font-size="11" fill="#2C2C2A">validate_scenario(yaml)</text>
 <path d="M1030,388 L880,388" fill="none" stroke="#444441" stroke-width="1.2" marker-end="url(#filled)"/>
-<text x="955.0" y="383" text-anchor="middle" font-size="11" fill="#2C2C2A">setInitialPose()</text>
+<text x="955.0" y="383" text-anchor="middle" font-size="11" fill="#2C2C2A">wait_for_nav2(): initial pose</text>
 <path d="M1030,410 L880,410" fill="none" stroke="#444441" stroke-width="1.2" marker-end="url(#filled)"/>
-<text x="955.0" y="405" text-anchor="middle" font-size="11" fill="#2C2C2A">waitUntilNav2Active()</text>
+<text x="955.0" y="405" text-anchor="middle" font-size="11" fill="#2C2C2A">lifecycle state (2 s limit, 3 min deadline)</text>
 <path d="M880,430 L1030,430" fill="none" stroke="#444441" stroke-width="1.2" stroke-dasharray="6 4" marker-end="url(#open)"/>
 <text x="955.0" y="425" text-anchor="middle" font-size="11" fill="#2C2C2A">active</text>
 <path d="M1030,480 L880,480" fill="none" stroke="#444441" stroke-width="1.2" marker-end="url(#filled)"/>
@@ -78,7 +78,7 @@
 <path d="M880,499 L745,499" fill="none" stroke="#444441" stroke-width="1.2" marker-end="url(#open)"/>
 <text x="812.5" y="494" text-anchor="middle" font-size="11" fill="#2C2C2A">/cmd_vel: drive</text>
 <path d="M745,518 L1030,518" fill="none" stroke="#444441" stroke-width="1.2" marker-end="url(#open)"/>
-<text x="887.5" y="513" text-anchor="middle" font-size="11" fill="#2C2C2A">/odom, /scan: recorded</text>
+<text x="887.5" y="513" text-anchor="middle" font-size="11" fill="#2C2C2A">/odom, /scan, TF, /amcl_pose: recorded + telemetry</text>
 <path d="M880,538 L1030,538" fill="none" stroke="#444441" stroke-width="1.2" stroke-dasharray="6 4" marker-end="url(#open)"/>
 <text x="955.0" y="533" text-anchor="middle" font-size="11" fill="#2C2C2A">result: SUCCEEDED or FAILED</text>
 <path d="M1040,572 L1205,572" fill="none" stroke="#444441" stroke-width="1.2" marker-end="url(#filled)"/>
@@ -86,9 +86,9 @@
 <path d="M1205,592 L1040,592" fill="none" stroke="#444441" stroke-width="1.2" stroke-dasharray="6 4" marker-end="url(#open)"/>
 <text x="1122.5" y="587" text-anchor="middle" font-size="11" fill="#2C2C2A">PASS / FAIL + reason</text>
 <path d="M1040,606 L1074,606 L1074,622 L1042,622" fill="none" stroke="#444441" stroke-width="1.2" marker-end="url(#filled)"/>
-<text x="1026" y="618" text-anchor="end" font-size="11" fill="#2C2C2A">write results/&lt;name&gt;.json</text>
+<text x="1026" y="618" text-anchor="end" font-size="11" fill="#2C2C2A">write results/&lt;name&gt;.json + telemetry CSVs</text>
 <path d="M1030,648 L205,648" fill="none" stroke="#444441" stroke-width="1.2" stroke-dasharray="6 4" marker-end="url(#open)"/>
-<text x="617.5" y="643" text-anchor="middle" font-size="11" fill="#2C2C2A">exit code 0 or 1</text>
+<text x="617.5" y="643" text-anchor="middle" font-size="11" fill="#2C2C2A">exit code 0, 1, or 3 (Nav2 didn't start: retried once)</text>
 <path d="M205,672 L475,672" fill="none" stroke="#444441" stroke-width="1.2" marker-end="url(#filled)"/>
 <text x="340.0" y="667" text-anchor="middle" font-size="11" fill="#2C2C2A">docker stop (container removed)</text>
 <path d="M205,708 L340,708" fill="none" stroke="#444441" stroke-width="1.2" marker-end="url(#filled)"/>
