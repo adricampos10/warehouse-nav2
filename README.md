@@ -7,16 +7,17 @@ I'm building an autonomous warehouse robot with **ROS 2 Jazzy + Nav2**, simulate
 > Work in progress.
 
 ## What I'm building
-- Differential-drive robot navigating a warehouse with Nav2.
-- Mission logic as a behavior tree: go to a shelf, wait, return, recover if blocked.
-- Scenario suite (moving obstacles, narrow aisles, people crossing) run headless in Docker, reporting success rate, time to goal and minimum obstacle distance.
-- CI with GitHub Actions running the scenarios on every change.
+- A differential-drive robot (TurtleBot3 Waffle) navigating with Nav2 in three worlds: Nav2's sandbox, my own [warehouse](#my-warehouse), and [my home](#my-home-scanned-with-my-iphone), mapped with my iPhone's LiDAR and turned into a Nav2 map and a Gazebo world by my own scripts.
+- A scenario suite (narrow aisles, people walking through the warehouse, a tour of my home) run headless in Docker, judged on goals reached, simulated time, distance to obstacles and contact with people.
+- A patrol [mission as a behaviour tree](#a-patrol-mission-as-a-behaviour-tree) (py_trees): visit places, retry, skip what can't be reached, always go home.
+- [Telemetry](#telemetry): a time series of every run (localisation error and uncertainty, speed, clearance, recoveries), the raw material for the fleet data work in the roadmap below.
+- CI on GitHub Actions: unit tests, every scenario and mission in parallel on each pull request, and infrastructure failures kept apart from navigation failures.
 
 ## Roadmap: robot fleet data
 Next, I'm turning the simulation into a small robot fleet and working with its data: finding recurring failures and early warning signs in the telemetry, building dashboards and alerts that can be trusted, detecting config drift, and packaging the evidence for engineering. Each part gets its own pull request:
 
 1. **Simulated fleet**: several robots or runs, each with its own ID, on the existing scenarios, so there is fleet data and not just one robot's.
-2. **Telemetry**: time series per robot and mission in a file (CSV or Parquet): mission state, speed, minimum distance to obstacles, localisation quality (AMCL covariance and error against Gazebo's true pose), replans, recoveries and the time of each leg.
+2. ✅ **Telemetry** ([done](#telemetry)): time series per robot and mission in a file (CSV or Parquet): mission state, speed, minimum distance to obstacles, localisation quality (AMCL covariance and error against Gazebo's true pose), replans, recoveries and the time of each leg.
 3. **Injected faults**: realistic failures on some robots: a sensor that publishes slower or drops out, odometry drift, a changed Nav2 parameter (e.g. the inflation), or a "battery" or "motor" that degrades over time.
 4. **Health checks and `/diagnostics`**: a node that checks each sensor publishes at its expected rate and reports OK, WARN or ERROR on `/diagnostics`, and a pre-run health check that refuses to start a mission if a sensor isn't healthy.
 5. **Rosbag on failure**: a buffer of the last few minutes that is saved only when a mission fails, to investigate what the robot was doing.
